@@ -1,6 +1,6 @@
 
 function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = DR(ePIE_inputs,varargin)
-%varargin = {ds_step, dt, probeNorm}
+%varargin = {beta_obj, beta_ap, probeNorm, init_weight, final_weight, order, semi_implicit_P}
 rng('shuffle','twister');
 %% setup working and save directories
 dir = pwd;
@@ -44,7 +44,6 @@ end
 diffpats = single(diffpats);
 [y_kspace,~] = size(diffpats(:,:,1)); % Size of diffraction patterns
 [N1,N2,nApert] = size(diffpats);
-%size(diffpats) = 384x384x100
 little_area = y_kspace; % Region of reconstruction for placing back into full size image
 %% Get centre positions for cropping (should be a 2 by n vector)
 %positions = convert_to_pixel_positions(positions,pixel_size);
@@ -84,7 +83,6 @@ else
 end
 best_err = 100; % check to make sure saving reconstruction with best error
 Z = diffpats.*exp(rand(N1,N2,nApert)); V=Z; ds=1;
-images = zeros(280,280,iterations);
 % user can choose the weight sequence how slowly it increases
 % weight in (0,1)
 % weight starts at a small value, such as 0.2 and then slowly increase to
