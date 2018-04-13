@@ -1,5 +1,5 @@
 
-function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = DR7(ePIE_inputs,varargin)
+function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = DR7b(ePIE_inputs,varargin)
 %varargin = {ds_step, dt, probeNorm}
 rng('shuffle','twister');
 %% setup working and save directories
@@ -23,10 +23,10 @@ else do_posi = 0; end
 %% === Reconstruction parameters frequently changed === %%
 
 freeze_aperture = Inf;
-optional_args = {.9 0.1 1 0.0 0}; %default values for varargin parameters
+optional_args = {.9 0.1 1 0 0.4 4 0}; %default values for varargin parameters
 nva = length(varargin);
 optional_args(1:nva) = varargin;
-[beta_obj, beta_ap, probeNorm, weight, semi_implicit_P] = optional_args{:};
+[beta_obj, beta_ap, probeNorm, init_weight, final_weight, order, semi_implicit_P] = optional_args{:};
 
 %% print parameters
 fprintf('iterations = %d\n', iterations);
@@ -35,8 +35,8 @@ fprintf('beta probe = %0.1f\n', beta_ap);
 fprintf('positivity = %d\n', do_posi);
 fprintf('gpu flag = %d\n', gpu);
 fprintf('updating probe = %d\n', update_aperture);
-fprintf('fixed_weight = %0.1f\n', weight);
 fprintf('probe norm = %d\n', probeNorm);
+fprintf('Initial weight = %.2f, final weight = %.2f, order = %d\n',init_weight, final_weight, order)
 fprintf('semi implicit on P = %d\n',semi_implicit_P);
 clear ePIE_inputs
 %% Define parameters from data and for reconstruction
@@ -89,12 +89,14 @@ end
 images = zeros(280,280,iterations);
 best_err = 100; % check to make sure saving reconstruction with best error
 V = big_obj;
+weights = init_weight + 0.5*(final_weight-init_weight)*round(2*((1:iterations)/iterations).^order);
 
 
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
 tic;
 for t = 1:iterations
+    weight = weights(t);
     %% sequential
     for aper = randperm(nApert)
         u_old = big_obj(Y1(aper):Y2(aper), X1(aper):X2(aper));
@@ -119,9 +121,8 @@ for t = 1:iterations
 %% Update the object
         Pu_new = ifft2(2*z_i - z_temp);
         diff = Pu_old - Pu_new;
-        new_beta_obj = beta_obj*sqrt( max(1,iterations-t)/iterations );
-        dt = new_beta_obj/probe_max;
-        u_temp = ((1-new_beta_obj)*u_old + dt*Pu_new.*conj(aperture)) ./ ( 1-new_beta_obj + dt*abs(aperture).^2 );
+        dt = beta_obj/probe_max;
+        u_temp = ((1-beta_obj)*u_old + dt*Pu_new.*conj(aperture)) ./ ( 1-beta_obj + dt*abs(aperture).^2 );
         
         if do_posi, u_new = max(0,real(u_temp));
         else u_new = u_temp; end

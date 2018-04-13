@@ -92,7 +92,7 @@ images = zeros(280,280,iterations);
 % the function can be continuouse or step function
 % my default function is a step monomial function of order 4th, 
 % initial value=0.2, final value =0.6
-weights = init_weight + 0.5*(final_weight-init_weight)*round(2*((1:iterations)/iterations).^4);
+weights = init_weight + 0.5*(final_weight-init_weight)*round(2*((1:iterations)/iterations).^order);
 
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
@@ -149,18 +149,17 @@ for t = 1:iterations
         if update_aperture == 1 
             if t > iterations - freeze_aperture
                 new_beta_ap = beta_ap*sqrt((iterations-t)/iterations);
-                ds = new_beta_ap./object_max;
-             else
-                ds = beta_ap./object_max;
+            else
+                new_beta_ap = beta_ap;
             end
-            %  tuning ds
+            ds = new_beta_ap./object_max;
+
             if semi_implicit_P            
-                aperture = ((1-beta_ap)*aperture + ds*Pu_new.*conj(u_old)) ./ ( (1-beta_ap) + ds*abs(u_old).^2 );
+                aperture = ((1-new_beta_ap)*aperture + ds*Pu_new.*conj(u_old)) ./ ( (1-new_beta_ap) + ds*abs(u_old).^2 );
             else 
                 aperture = aperture - ds*conj(u_old).*(diff);
-            end
-        end
-    %}            
+            end            
+        end         
         fourier_error(t,aper) = sum(sum(abs(diffpat_i(missing_data ~= 1) - check_dp(missing_data ~= 1))))./sum(sum(diffpat_i(missing_data ~= 1)));
     end
     scale = max(max(abs(aperture)));
@@ -178,7 +177,7 @@ for t = 1:iterations
         imagesc(hsv_aper); axis image; colormap gray; title('aperture single'); colorbar
         subplot(2,2,3)
         errors = sum(fourier_error,2)/nApert;
-        fprintf('%d. Error = %f, scale = %f, ds = %f, weight = %f\n',t,errors(t),scale, ds, weight);
+        fprintf('%d. Error = %f, scale = %.3f, dt = %.4f, ds = %.4f, weight = %.2f\n',t,errors(t),scale,dt, ds, weight);        
         plot(errors); ylim([0,0.2]);
         subplot(2,2,4)
         imagesc(log(fftshift(check_dp))); axis image
