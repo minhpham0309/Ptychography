@@ -1,6 +1,6 @@
 
 function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = DR7(ePIE_inputs,varargin)
-%varargin = {ds_step, dt, probeNorm}
+%varargin = {beta_obj, beta_ap, probeNorm, init_weight, final_weight, order, semi_implicit_P}
 rng('shuffle','twister');
 %% setup working and save directories
 dir = pwd;
@@ -46,7 +46,6 @@ end
 diffpats = single(diffpats);
 [y_kspace,~] = size(diffpats(:,:,1)); % Size of diffraction patterns
 [N1,N2,nApert] = size(diffpats);
-%size(diffpats) = 384x384x100
 little_area = y_kspace; % Region of reconstruction for placing back into full size image
 %% Get centre positions for cropping (should be a 2 by n vector)
 %positions = convert_to_pixel_positions(positions,pixel_size);
