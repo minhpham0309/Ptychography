@@ -63,7 +63,7 @@ else
     initial_aperture = aperture;
 end
 if big_obj == 0
-    big_obj = single(ones(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
+    big_obj = single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
     %big_obj = zeros(bigx,bigy);
     initial_obj = big_obj;
 else
