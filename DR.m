@@ -90,7 +90,12 @@ Z = diffpats.*exp(rand(N1,N2,nApert)); V=Z; ds=1;
 % the function can be continuouse or step function
 % my default function is a step monomial function of order 4th, 
 % initial value=0.2, final value =0.6
-weights = init_weight + 0.5*(final_weight-init_weight)*round(2*((1:iterations)/iterations).^order);
+% I update the weight functions: you can either choose step function or continuous
+%weights = init_weight + 0.5*(final_weight-init_weight)*round(2*((1:iterations)/iterations).^order);
+weights = init_weight + (final_weight-init_weight)*((1:iterations)/iterations).^order;
+
+fprintf('Number of diff patterns = %d\n',size(diffpats,3));
+fprintf('big_obj size = %dx%d, aperture size = %dx%d, pixel_size = %f\n',size(big_obj), size(aperture),pixel_size);
 
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
