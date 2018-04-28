@@ -20,6 +20,11 @@ update_aperture = ePIE_inputs.updateAp;
 showim = ePIE_inputs(1).showim;
 if isfield(ePIE_inputs, 'do_posi'); do_posi = ePIE_inputs.do_posi;
 else do_posi = 0; end
+if isfield(ePIE_inputs, 'save_intermediate');
+    save_intermediate = ePIE_inputs.save_intermediate;
+else
+    save_intermediate = 0;
+end
 %% === Reconstruction parameters frequently changed === %%
 freeze_aperture = Inf;
 optional_args = {.9 .1 1, 0.2, 0.6, 4, 0}; %default values for varargin parameters
@@ -69,6 +74,12 @@ if big_obj == 0
 else
     big_obj = single(big_obj);
     initial_obj = big_obj;
+end
+if save_intermediate == 1
+    inter_obj = zeros([size(big_obj) floor(iterations/10)]);
+    inter_frame = 0;
+else
+    inter_obj = [];
 end
 display(size(big_obj));
 fourier_error = zeros(iterations,nApert);
@@ -201,7 +212,12 @@ for t = 1:iterations
         best_obj = big_obj;
         best_err = mean_err;
     end         
-      
+    if save_intermediate == 1 && mod(itt,10) == 0
+        inter_frame = inter_frame + 1;
+%         save(['inter_output_ePIE_ID_',jobID,'_itt_',num2str(itt),'.mat'],...
+%         'best_obj','aperture','fourier_error','-v7.3');
+        inter_obj(:,:,inter_frame) = best_obj;
+    end
 end
 disp('======reconstruction finished=======')
 
