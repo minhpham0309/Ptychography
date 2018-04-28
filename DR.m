@@ -212,7 +212,7 @@ for t = 1:iterations
         best_obj = big_obj;
         best_err = mean_err;
     end         
-    if save_intermediate == 1 && mod(itt,10) == 0
+    if save_intermediate == 1 && mod(t,10) == 0
         inter_frame = inter_frame + 1;
 %         save(['inter_output_ePIE_ID_',jobID,'_itt_',num2str(itt),'.mat'],...
 %         'best_obj','aperture','fourier_error','-v7.3');
