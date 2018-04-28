@@ -83,7 +83,8 @@ else
 end
 best_err = 100; % check to make sure saving reconstruction with best error
 Z = diffpats.*exp(rand(N1,N2,nApert)); V=Z; ds=1;
-% user can choose the weight sequence how slowly it increases
+% user can choose the weight function how slowly it increases
+% I provide 3 weight functions: square root, quadratic and step quadratic
 % weight in (0,1)
 % weight starts at a small value, such as 0.2 and then slowly increase to
 % some larger value, such as 0.6
@@ -93,6 +94,7 @@ Z = diffpats.*exp(rand(N1,N2,nApert)); V=Z; ds=1;
 % I update the weight functions: you can either choose step function or continuous
 %weights = init_weight + 0.5*(final_weight-init_weight)*round(2*((1:iterations)/iterations).^order);
 weights = init_weight + (final_weight-init_weight)*((1:iterations)/iterations).^order;
+%beta = sqrt((iterations-(1:iterations))/iterations); weights = init_weight*beta + (1-beta)*final_weight;
 
 fprintf('Number of diff patterns = %d\n',size(diffpats,3));
 fprintf('big_obj size = %dx%d, aperture size = %dx%d, pixel_size = %f\n',size(big_obj), size(aperture),pixel_size);
