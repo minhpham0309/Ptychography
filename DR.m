@@ -1,5 +1,5 @@
 
-function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = DR(ePIE_inputs,varargin)
+function [big_obj,aperture,fourier_error,initial_obj,initial_aperture,inter_obj] = DR(ePIE_inputs,varargin)
 %varargin = {beta_obj, beta_ap, probeNorm, init_weight, final_weight, order, semi_implicit_P}
 rng('shuffle','twister');
 %% setup working and save directories
