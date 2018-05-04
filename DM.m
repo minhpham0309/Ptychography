@@ -148,14 +148,16 @@ for itt = 1:iterations
        ap_updated = aperture;
     end
     %update object
-    big_obj_buffer = ones(size(big_obj));
+    big_obj_buffer = zeros(size(big_obj));
+    big_obj_counter = ones(size(big_obj));
     for ii = 1:nApert
         big_obj_buffer(Y1(ii):Y2(ii),X1(ii):X2(ii)) = big_obj_buffer(Y1(ii):Y2(ii),X1(ii):X2(ii)) + ...
             psi(:,:,ii).*conj(ap_updated) ./ (abs(ap_updated).^2 + 1e-10);
-        %figure(99); imagesc(abs(big_obj_buffer)),axis image; pause
+        %count overlaps
+        big_obj_counter(Y1(ii):Y2(ii),X1(ii):X2(ii)) = big_obj_counter(Y1(ii):Y2(ii),X1(ii):X2(ii)) + 1;
     end
-    
-    big_obj = big_obj_buffer./max(abs(big_obj_buffer(:)));
+    big_obj = big_obj_buffer./big_obj_counter;
+    figure(99);imagesc(abs(big_obj)),axis image;pause;
     aperture = ap_updated;
     
     % build auxiliary functions
