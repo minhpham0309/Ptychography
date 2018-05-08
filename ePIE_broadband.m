@@ -332,7 +332,7 @@ for itt = 1:iterations
             end
         end
     toc
-    
+    fprintf('%d. Error = %f\n',itt,mean_err);
 end
 disp('======reconstruction finished=======')
 
