@@ -157,7 +157,7 @@ for t = 1:iterations
         %u_temp = (u_old + dt*Pu_new.*conj(aperture)) ./ ( 1 + dt*abs(aperture).^2 );
         u_temp = ((1-beta_obj)*u_old + dt*Pu_new.*conj(aperture)) ./ ( (1-beta_obj) + dt*abs(aperture).^2 );
         
-        if do_posi, u_new = max(0,real(u_new));
+        if do_posi, u_new = max(0,real(u_temp));
         else u_new = u_temp; end
 
         big_obj(Y1(aper):Y2(aper), X1(aper):X2(aper)) = u_new;
