@@ -140,7 +140,8 @@ for itt = 1:iterations
     big_obj_denom= zeros(size(big_obj));
     probe_numer = zeros(y_kspace);
     probe_denom= zeros(y_kspace);   
-    abs_aperture_2 =  abs(aperture).^2;
+    abs_ap_2 =  abs(aperture).^2;
+    conj_ap = conj(aperture);
     
     % update object
     for ii=1:nApert
@@ -157,7 +158,7 @@ for itt = 1:iterations
                
         z = fft2( 2*psi_O - psi_old );
         z_missing = z(missing_data);
-        z = diffpats(:,:,ii) .* exp(1i*angle(z));
+        z = 0.9*diffpats(:,:,ii) .* exp(1i*angle(z)) + 0.1*z;
         z(missing_data)=z_missing;
         psi_F = ifft2(z);
         psi(:,:,ii) = psi_old + (psi_F - psi_O);
@@ -168,8 +169,8 @@ for itt = 1:iterations
         % update object_i
         %u_new = ( (1-beta_obj)*u_old + dt*psi(:,:,ii).*conj(aperture) ) ./ ( (1-beta_obj) + dt*abs(aperture).^2  );
         %big_obj(r,c)  = u_new;
-        big_obj_numer(r,c) = big_obj_numer(r,c) + psi(:,:,ii).*conj(aperture);
-        big_obj_denom(r,c)= big_obj_denom(r,c) + abs_aperture_2;
+        big_obj_numer(r,c) = big_obj_numer(r,c) + psi(:,:,ii).*conj_ap;
+        big_obj_denom(r,c)= big_obj_denom(r,c) + abs_ap_2;
         
         % update probe
         %new_beta_ap = beta_ap*sqrt((iterations-itt)/iterations);        
@@ -181,7 +182,7 @@ for itt = 1:iterations
         %big_obj_temp(r,c) = big_obj_temp(r,c) + u_new;
     end
     probe_max = max(abs(aperture(:))).^2;
-    %big_obj = big_obj_numer./(big_obj_denom+1e-3);
+    %big_obj = big_obj_numer./(big_obj_denom+1e-8); big_obj(abs(big_obj)>1)=1;
     big_obj = ((1-beta_obj)*big_obj + (beta_obj/probe_max/nApert)* big_obj_numer) ./ (1-beta_obj + (beta_obj/probe_max/nApert)*big_obj_denom);
     
     % update probe
@@ -192,7 +193,7 @@ for itt = 1:iterations
         %new_beta_ap = beta_ap*sqrt((iterations-itt)/iterations);        
         %ds = new_beta_ap./object_max;
         probe_numer = probe_numer + conj(u_old).*psi(:,:,ii);
-        probe_denom= probe_denom+ abs(u_old).^2; 
+        probe_denom = probe_denom + abs(u_old).^2; 
     end
     object_max = max(abs(big_obj(:))).^2;
     %aperture=probe_temp./probe_denom;
@@ -217,7 +218,7 @@ for itt = 1:iterations
         subplot(2,2,3)
         errors = sum(fourier_error,2)/nApert;
         fprintf('%d. Error = %f, scale = %f\n',itt,errors(itt),max(max(abs(aperture))));
-        plot(errors); ylim([0,0.2]);
+        plot(errors); ylim([0,0.4]);
         subplot(2,2,4)
         imagesc(log(fftshift(check_dp))); axis image
         drawnow
