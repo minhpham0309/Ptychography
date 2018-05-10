@@ -26,7 +26,7 @@ S = ePIE_inputs(1).S;
 [~,job_ID] = system('echo $JOB_ID');
 job_ID = job_ID(~isspace(job_ID));
 nModes = length(pixel_size);
-filename = strcat('reconstruction_',filename,'_',job_ID);
+filename = strcat('reconstruction_DR_',filename,'_',job_ID);
 filename = strrep(filename,'__','_');
 %% parameter inputs
 if isfield(ePIE_inputs, 'saveOutput')
@@ -112,7 +112,7 @@ best_err = 100; % check to make sure saving reconstruction with best error
 little_cent = floor(N1/2) + 1;
 cropVec = (1:N1) - little_cent;
 mcm = @makeCircleMask;
-for m = 1:length(lambda)
+for m = 1:nModes
     %% Get centre positions for cropping (should be a 2 by n vector)
     [pixelPositions, bigx, bigy] = convert_to_pixel_positions_testing5(positions,pixel_size(m),N1);
     centrey = round(pixelPositions(:,2));
@@ -159,42 +159,41 @@ for m = 1:length(lambda)
     
 end
 fourier_error = zeros(iterations,nApert);
-nMode = length(lambda);
-Z =cell(nMode);
-for m=1:length(lambda)
+Z =cell(nModes);
+for m=1:nModes
     Z{m} = zeros(N1,N2,nApert);
 end
 ws = w_init + (w_final-w_init)* ((1:iterations)/iterations).^order;
-z = cell(nMode,1);
-u_old = cell(nMode,1);
-z_F = cell(nMode);
-z_u = cell(nMode,1);
-Pu = cell(nMode,1);
+z = cell(nModes,1);
+u_old = cell(nModes,1);
+z_F = cell(nModes);
+z_u = cell(nModes,1);
+Pu = cell(nModes,1);
 
 %% GPU
 if gpu == 1
-    display('========ePIE reconstructing with GPU========')
+    display('========DR reconstructing with GPU========')
     diffpats = gpuArray(diffpats);
     fourier_error = gpuArray(fourier_error);
     big_obj = cellfun(@gpuArray, big_obj, 'UniformOutput', false);
     aperture = cellfun(@gpuArray, aperture, 'UniformOutput', false);
     S = gpuArray(S);
 else
-    display('========ePIE reconstructing with CPU========')
+    display('========DR reconstructing with CPU========')
 end
 cdp = class(diffpats);
 
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
-object_max = zeros(length(lambda),1);
-probe_max = zeros(length(lambda),1);
+object_max = zeros(nModes,1);
+probe_max = zeros(nModes,1);
 for itt = 1:iterations
     tic
     w = ws(itt);
     for aper = randperm(nApert)
         current_dp = diffpats(:,:,aper);
         
-        for m = 1:length(lambda)
+        for m = 1:nModes
             %bigObjShifted{m} = subPixelShift2(big_obj{m},-1*(centrey{m}(aper)-centBig{m}),-1*(centrex{m}(aper)-centBig{m}));
             %             bigObjShifted{m} = circshift(big_obj{m}, [-1*(centrey{m}(aper) - centBig{m}) -1*(centrex{m}(aper) - centBig{m})]);
             %             rspace = croppedOut(bigObjShifted{m},y_kspace);
@@ -218,14 +217,14 @@ for itt = 1:iterations
         %         end
         %
         collected_mag = zeros([N1, N2],cdp);
-        for m = 1:length(lambda)
+        for m = 1:nModes
             collected_mag = collected_mag + abs(z_F{m}).^2;
         end
         %}
         %collected_mag = sum(abs(z_F).^2,3);
         %% re-weight the magnitudes       
         scale = (1-w)*sqrt(complex( current_dp./collected_mag )) + w;
-        for m = 1:length(lambda)
+        for m = 1:nModes
             %             if gpu == 1
             z_F{m}(goodInds) =  scale(goodInds).* z_F{m}(goodInds) ;
             %             else
@@ -238,7 +237,7 @@ for itt = 1:iterations
             Z{m}(:,:,aper) = z{m};
             
             Pu_new = ifft2(z{m});
-            diff_exit_wave = Pu_new- Pu{m};
+            diff_exit_wave = Pu_new - Pu{m};
  
             dt = beta_obj/probe_max(m)^2;
             u_new = ( ((1-beta_obj)/dt)*u_old{m} + Pu_new.*conj(aperture{m})) ./ ( (1-beta_obj)/dt + abs(aperture{m}).^2 );
@@ -306,7 +305,7 @@ for itt = 1:iterations
 
     end 
     % show images
-    for m=1:nMode
+    for m=1:nModes
         [dim1,dim2] = size(big_obj{m});
         r = floor(dim1/2)+ (-128:128); c = floor(dim2/2)+ (-128:128);
         figure(m); imagesc(abs(big_obj{m}(r,c))); colormap jet; axis image; set(gca,'YTick',[],'XTick',[]); colorbar
@@ -316,10 +315,10 @@ for itt = 1:iterations
     %% averaging between wavelengths
     if averagingConstraint == 1
         %         if gpu == 1
-        averaged_obj = zeros([size(big_obj{1}) length(lambda)], cdp);
+        averaged_obj = zeros([size(big_obj{1}) nModes], cdp);
         interpMethod = 'linear';
         %         else
-        %             averaged_obj = zeros([size(big_obj{1}) length(lambda)]);
+        %             averaged_obj = zeros([size(big_obj{1}) nModes]);
         %             interpMethod = 'linear';
         %         end
         
@@ -327,11 +326,11 @@ for itt = 1:iterations
         averaged_obj(:,:,1) = first_obj;
         ndim = floor(size(big_obj{1},1)/2);
         [xm, ym] = meshgrid(-ndim:ndim, -ndim:ndim);
-        %k_arr = zeros(1,length(lambda));
+        %k_arr = zeros(1,nModes);
         %k_arr(1) = 1;
         %rescaling all the objects to have the same pixel size as first obj
-        %         parfor m = 2:length(lambda)
-        for m = 2:length(lambda)
+        %         parfor m = 2:nModes
+        for m = 2:nModes
             xm_rescaled = xm .* (pixel_size(m) / pixel_size(1));
             ym_rescaled = ym .* (pixel_size(m) / pixel_size(1));
             ctrPixel = ceil((size(big_obj{m},1)+1) / 2);
@@ -342,11 +341,11 @@ for itt = 1:iterations
             %k_arr(m) = normalizer(first_obj, resized_obj);
             averaged_obj(:,:,m) = resized_obj;
         end
-        averaged_obj = sum(averaged_obj,3) ./ length(lambda);
+        averaged_obj = sum(averaged_obj,3) ./ nModes;
         %distribute back to big_objs
         big_obj{1} = averaged_obj;
-        %         parfor m = 2:length(lambda)
-        for m = 2:length(lambda)
+        %         parfor m = 2:nModes
+        for m = 2:nModes
             xm_rescaled = xm .* (pixel_size(1) / pixel_size(m));
             ym_rescaled = ym .* (pixel_size(1) / pixel_size(m));
             resized_obj = interp2(xm_rescaled, ym_rescaled, averaged_obj, xm, ym, interpMethod, 0);
@@ -359,7 +358,7 @@ for itt = 1:iterations
     mean_err = sum(fourier_error(itt,:),2)/nApert;
     
     if best_err > mean_err
-        for m = 1:length(lambda)
+        for m = 1:nModes
             best_obj{m} = big_obj{m};
         end
         best_err = mean_err;
