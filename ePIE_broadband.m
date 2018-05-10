@@ -198,11 +198,6 @@ for itt = 1:iterations
 
         end
 %% calculated magnitudes at scan position aper
-%         if gpu == 1
-%             collected_mag = zeros([size(diffpats,1) size(diffpats,2)],'gpuArray');
-%         else
-%             collected_mag = zeros([size(diffpats,1) size(diffpats,2)]);
-%         end
         collected_mag = zeros([size(diffpats,1) size(diffpats,2)],cdp);
         for ii = 1:length(lambda)
         collected_mag(goodInds) = collected_mag(goodInds) + abs(temp_dp{ii}(goodInds)).^2;
@@ -210,17 +205,12 @@ for itt = 1:iterations
 %% re-weight the magnitudes
 
         for m = 1:length(lambda)
-%             if gpu == 1
                 temp_dp{m}(goodInds) = sqrt(complex(current_dp(goodInds))) .* temp_dp{m}(goodInds) ...
                     ./ sqrt(complex(collected_mag(goodInds)));
-%             else
-%                 temp_dp{m}(goodInds) = sqrt(current_dp(goodInds)) .* temp_dp{m}(goodInds) ...
-%                     ./ sqrt(collected_mag(goodInds)); %enforcing sum of magnitudes
-%             end
 %% Update the object
 
             new_exit_wave = ifft2(temp_dp{m});
-            diff_exit_wave = new_exit_wave- buffer_exit_wave{m};
+            diff_exit_wave = new_exit_wave - buffer_exit_wave{m};
             update_factor_ob{m} = conj(aperture{m}) ./ (probe_max{m}.^2);
             new_rspace = buffer_rspace{m} + update_factor_ob{m}.*beta_obj.*(diff_exit_wave);
              if strongPosi == 1
