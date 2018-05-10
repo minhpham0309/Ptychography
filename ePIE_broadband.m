@@ -106,7 +106,7 @@ clear ePIE_inputs
 for ii = 1:size(diffpats,3)
     diffpats(:,:,ii) = fftshift(diffpats(:,:,ii));
 end
-goodInds = find(diffpats(:,:,1) ~= -1); %assume missing center homogenous
+goodInds = diffpats(:,:,1) ~= -1; %assume missing center homogenous
 [y_kspace,~] = size(diffpats(:,:,1)); % Size of diffraction patterns
 nApert = size(diffpats,3);
 best_err = 100; % check to make sure saving reconstruction with best error
@@ -203,10 +203,9 @@ for itt = 1:iterations
         collected_mag(goodInds) = collected_mag(goodInds) + abs(temp_dp{ii}(goodInds)).^2;
         end
 %% re-weight the magnitudes
-
+        mag_ratio = sqrt(complex(current_dp(goodInds))) ./ sqrt(complex(collected_mag(goodInds)));
         for m = 1:length(lambda)
-                temp_dp{m}(goodInds) = sqrt(complex(current_dp(goodInds))) .* temp_dp{m}(goodInds) ...
-                    ./ sqrt(complex(collected_mag(goodInds)));
+                temp_dp{m}(goodInds) = mag_ratio .* temp_dp{m}(goodInds);
 %% Update the object
 
             new_exit_wave = ifft2(temp_dp{m});
