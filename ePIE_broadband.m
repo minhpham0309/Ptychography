@@ -106,7 +106,7 @@ clear ePIE_inputs
 for ii = 1:size(diffpats,3)
     diffpats(:,:,ii) = fftshift(diffpats(:,:,ii));
 end
-goodInds = diffpats(:,:,1) ~= -1; %assume missing center homogenous
+goodInds = find(diffpats(:,:,1) ~= -1); %assume missing center homogenous
 [y_kspace,~] = size(diffpats(:,:,1)); % Size of diffraction patterns
 nApert = size(diffpats,3);
 best_err = 100; % check to make sure saving reconstruction with best error
