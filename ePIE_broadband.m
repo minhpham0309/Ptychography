@@ -34,10 +34,10 @@ if isfield(ePIE_inputs, 'saveOutput')
 else
     saveOutput = 1;
 end
-if isfield(ePIE_inputs, 'saveIntermediate')
-    saveIntermediate = ePIE_inputs(1).saveIntermediate;
+if isfield(ePIE_inputs, 'save_intermediate');
+    save_intermediate = ePIE_inputs.save_intermediate;
 else
-    saveIntermediate = 0;
+    save_intermediate = 0;
 end
 if isfield(ePIE_inputs, 'GpuFlag')
     gpu = ePIE_inputs(1).GpuFlag;
@@ -158,6 +158,12 @@ for m = 1:length(lambda)
     else
         big_obj{m} = single(big_obj{m});
         initial_obj{m} = big_obj{m};
+    end
+    if save_intermediate == 1
+        inter_obj{m} = zeros([size(big_obj{m}) floor(iterations/10)]);
+        inter_frame = 0;
+    else
+        inter_obj = [];
     end
 %     display(size(big_obj{m}));
 
@@ -310,20 +316,23 @@ for itt = 1:iterations
      mean_err = sum(fourier_error(itt,:),2)/nApert;
      
         if best_err > mean_err
-            for m = 1:length(lambda)
+            for m = 1:nModes
             best_obj{m} = big_obj{m};
             end
             best_err = mean_err;
         end
-        if saveOutput == 1
-            if itt == 50 && saveIntermediate == 1
+
+        if save_intermediate == 1 && mod(itt,10) == 0
+            inter_frame = inter_frame+1;
+            for m = 1:nModes
                 if gpu == 1
-                    best_obj = cellfun(@gather, best_obj, 'UniformOutput', false);
+                    inter_obj{m}(:,:,inter_frame) = cellfun(@gather, best_obj, 'UniformOutput', false);
+                else
+                    inter_obj{m}(:,:,inter_frame) = best_obj{m};
                 end
-                save([filename '_iter_' num2str(itt) '.mat'], 'best_obj', '-v7.3');
-                best_obj = cellfun(@gpuArray, best_obj, 'UniformOutput', false);
             end
         end
+
     toc
     fprintf('%d. Error = %f\n',itt,mean_err);
 end
@@ -341,7 +350,8 @@ S = gather(S);
 end
 
 if saveOutput == 1
-    save([save_string filename '.mat'],'best_obj','aperture','big_obj','initial_aperture','fourier_error','S');
+    save([save_string filename '.mat'],...
+        'best_obj','aperture','big_obj','initial_aperture','fourier_error','S','inter_obj');
 end
 
 %% Function for converting positions from experimental geometry to pixel geometry
