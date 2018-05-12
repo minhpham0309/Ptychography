@@ -326,7 +326,7 @@ for itt = 1:iterations
             inter_frame = inter_frame+1;
             for m = 1:nModes
                 if gpu == 1
-                    inter_obj{m}(:,:,inter_frame) = cellfun(@gather, best_obj{m}, 'UniformOutput', false);
+                    inter_obj{m}(:,:,inter_frame) = gather(best_obj{m});
                 else
                     inter_obj{m}(:,:,inter_frame) = best_obj{m};
                 end
