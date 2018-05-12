@@ -74,6 +74,11 @@ if isfield(ePIE_inputs, 'updateAp')
 else
     updateAp = 1;
 end
+if isfield(ePIE_inputs, 'update_aperture_after');
+    update_aperture_after = ePIE_inputs.update_aperture_after;
+else
+    update_aperture_after = 0;
+end
 if isfield(ePIE_inputs, 'miscNotes')
     miscNotes = ePIE_inputs.miscNotes;
 else
@@ -82,7 +87,6 @@ end
 %% === Reconstruction parameters frequently changed === %%
 beta_pos = 0.9; % Beta for enforcing positivity
 do_posi = 0;
-update_aperture_itt = 0;
 %%
 fprintf('dataset = %s\n',ePIE_inputs.FileName);
 fprintf('output filename = %s\n', filename);
@@ -98,7 +102,7 @@ fprintf('strong positivity = %d\n',strongPosi);
 fprintf('realness enforced = %d\n',realness);
 fprintf('updating probe = %d\n',updateAp);
 fprintf('enforcing positivity = %d\n',do_posi);
-fprintf('updating probe after iteration %d\n',update_aperture_itt);
+fprintf('updating probe after iteration %d\n',update_aperture_after);
 fprintf('mode suppression = %d\n',modeSuppression);
 fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
@@ -231,7 +235,7 @@ for itt = 1:iterations
 
 %% Update the probe
         
-            if itt > update_aperture_itt && updateAp == 1
+            if itt > update_aperture_after && updateAp == 1
                 if modeSuppression == 1 %only update modes 3,6,9,12,15
                     if mod(m,3) == 0
                         update_factor_pr = beta_ap ./ object_max{m}.^2;
