@@ -351,7 +351,7 @@ end
 
 if saveOutput == 1
     save([save_string filename '.mat'],...
-        'best_obj','aperture','big_obj','initial_aperture','fourier_error','S','inter_obj');
+        'best_obj','aperture','big_obj','initial_aperture','fourier_error','S','inter_obj','-v7.3');
 end
 
 %% Function for converting positions from experimental geometry to pixel geometry
