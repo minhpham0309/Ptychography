@@ -178,6 +178,7 @@ if gpu == 1
     fourier_error = gpuArray(fourier_error);
     big_obj = cellfun(@gpuArray, big_obj, 'UniformOutput', false);
     aperture = cellfun(@gpuArray, aperture, 'UniformOutput', false);
+    Z = cellfun(@gpuArray, Z, 'UniformOutput', false);
     S = gpuArray(S);
     object_max = gpuArray(object_max);
     probe_max = gpuArray(probe_max);
