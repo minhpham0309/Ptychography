@@ -104,7 +104,7 @@ fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
 %% Define parameters from data and for reconstruction
 for ii = 1:size(diffpats,3)     %diffpats are intensities in fact
-    diffpats(:,:,ii) = fftshift(diffpats(:,:,ii));
+    diffpats(:,:,ii) = single(fftshift(diffpats(:,:,ii)));
 end
 goodInds = diffpats(:,:,1) ~= -1;
 [N1,N2,nApert] = size(diffpats); % Size of diffraction patterns
@@ -161,7 +161,7 @@ end
 fourier_error = zeros(iterations,nApert);
 Z =cell(nModes);
 for m=1:nModes
-    Z{m} = zeros(N1,N2,nApert);
+    Z{m} = single(zeros(N1,N2,nApert));
 end
 ws = w_init + (w_final-w_init)* ((1:iterations)/iterations).^order;
 z = cell(nModes,1);
@@ -169,7 +169,8 @@ u_old = cell(nModes,1);
 z_F = cell(nModes);
 z_u = cell(nModes,1);
 Pu = cell(nModes,1);
-
+object_max = zeros(nModes,1);
+probe_max = zeros(nModes,1);
 %% GPU
 if gpu == 1
     display('========DR reconstructing with GPU========')
@@ -178,6 +179,8 @@ if gpu == 1
     big_obj = cellfun(@gpuArray, big_obj, 'UniformOutput', false);
     aperture = cellfun(@gpuArray, aperture, 'UniformOutput', false);
     S = gpuArray(S);
+    object_max = gpuArray(object_max);
+    probe_max = gpuArray(probe_max);
 else
     display('========DR reconstructing with CPU========')
 end
@@ -185,8 +188,7 @@ cdp = class(diffpats);
 
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
-object_max = zeros(nModes,1);
-probe_max = zeros(nModes,1);
+
 for itt = 1:iterations
     tic
     w = ws(itt);
