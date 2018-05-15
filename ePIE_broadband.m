@@ -160,7 +160,7 @@ for m = 1:length(lambda)
         initial_obj{m} = big_obj{m};
     end
     if save_intermediate == 1
-        inter_obj{m} = zeros([size(big_obj{m}) floor(iterations/10)]);
+        inter_obj{m} = zeros([size(big_obj{m}) 10]);
         inter_frame = 0;
     else
         inter_obj = [];
@@ -322,7 +322,7 @@ for itt = 1:iterations
             best_err = mean_err;
         end
 
-        if save_intermediate == 1 && mod(itt,10) == 0
+        if save_intermediate == 1 && mod(itt,floor(iterations/10)) == 0
             inter_frame = inter_frame+1;
             for m = 1:nModes
                 if gpu == 1
