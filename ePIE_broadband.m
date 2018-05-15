@@ -222,6 +222,7 @@ for itt = 1:iterations
             diff_exit_wave = new_exit_wave - buffer_exit_wave{m};
             update_factor_ob{m} = conj(aperture{m}) ./ (probe_max{m}.^2);
             new_rspace = buffer_rspace{m} + update_factor_ob{m}.*beta_obj.*(diff_exit_wave);
+            new_rspace = new_rspace ./ max(abs(new_rspace(:)));
              if strongPosi == 1
                  new_rspace(new_rspace < 0) = 0;
              end
