@@ -187,7 +187,7 @@ disp('========beginning reconstruction=======');
 for itt = 1:iterations
     itt
     tic
-    S_j = zeros(nModes,nApert);
+    S_j = zeros(nModes,nApert,cdp);
     for aper = randperm(nApert)
         current_dp = diffpats(:,:,aper);
         for m = 1:length(lambda)
