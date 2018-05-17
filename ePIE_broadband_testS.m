@@ -350,11 +350,12 @@ big_obj = cellfun(@gather, big_obj, 'UniformOutput', false);
 initial_aperture = cellfun(@gather, initial_aperture, 'UniformOutput', false);
 % S = cellfun(@gather, S, 'UniformOutput', false);
 S = gather(S);
+S_j = gather(S_j);
 end
 
 if saveOutput == 1
     save([save_string filename '.mat'],...
-        'best_obj','aperture','big_obj','initial_aperture','fourier_error','S','inter_obj','-v7.3');
+        'S_j','best_obj','aperture','big_obj','initial_aperture','fourier_error','S','inter_obj','-v7.3');
 end
 
 %% Function for converting positions from experimental geometry to pixel geometry
