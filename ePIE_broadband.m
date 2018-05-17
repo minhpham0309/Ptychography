@@ -222,7 +222,6 @@ for itt = 1:iterations
             diff_exit_wave = new_exit_wave - buffer_exit_wave{m};
             update_factor_ob{m} = conj(aperture{m}) ./ (probe_max{m}.^2);
             new_rspace = buffer_rspace{m} + update_factor_ob{m}.*beta_obj.*(diff_exit_wave);
-            new_rspace = new_rspace ./ max(abs(new_rspace(:)));
              if strongPosi == 1
                  new_rspace(new_rspace < 0) = 0;
              end
@@ -236,6 +235,7 @@ for itt = 1:iterations
                  new_rspace = real(new_rspace);
              end
              big_obj{m}(cropR(aper,:,m), cropC(aper,:,m)) = new_rspace;
+             big_obj{m} = big_obj{m} ./ max(abs(big_obj{m}(:))); 
 %             bigObjShifted{m} = replaceROI(bigObjShifted{m},new_rspace{m});
 %             big_obj{m} = subPixelShift2(bigObjShifted{m},1*(centrey{m}(aper)-centBig{m}),1*(centrex{m}(aper)-centBig{m}));
 %             big_obj{m} = circshift(bigObjShifted{m}, [1*(centrey{m}(aper) - centBig{m}) 1*(centrex{m}(aper)-centBig{m})]);
