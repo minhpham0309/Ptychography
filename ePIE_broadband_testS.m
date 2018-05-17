@@ -26,7 +26,7 @@ S = ePIE_inputs(1).S;
 [~,job_ID] = system('echo $JOB_ID');
 job_ID = job_ID(~isspace(job_ID));
 nModes = length(pixel_size);
-filename = strcat('reconstruction_',filename,'_',job_ID);
+filename = strcat('reconstruction_testS_',filename,'_',job_ID);
 filename = strrep(filename,'__','_');
 %% parameter inputs
 if isfield(ePIE_inputs, 'saveOutput')
