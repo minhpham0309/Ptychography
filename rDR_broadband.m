@@ -1,5 +1,5 @@
 %% Streamlined ePIE code for reconstructing from experimental diffraction patterns
-function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = DR_broadband(ePIE_inputs,varargin)
+function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = rDR_broadband(ePIE_inputs,varargin)
 %varargin = {beta_ap, beta_obj, modeSuppression}
 optional_args = {0.9, 0.9, 0, 1, 1 , 0.1, 0.4, 6, 0}; %default values for optional parameters
 nva = length(varargin);
