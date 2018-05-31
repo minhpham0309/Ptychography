@@ -108,7 +108,7 @@ fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
 %% Define parameters from data and for reconstruction
 for ii = 1:size(diffpats,3)
-    diffpats(:,:,ii) = fftshift(diffpats(:,:,ii));
+    diffpats(:,:,ii) = single(fftshift(diffpats(:,:,ii)));
 end
 goodInds = find(diffpats(:,:,1) ~= -1); %assume missing center homogenous
 [y_kspace,~] = size(diffpats(:,:,1)); % Size of diffraction patterns
