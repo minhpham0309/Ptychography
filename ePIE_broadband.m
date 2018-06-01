@@ -1,10 +1,10 @@
 %% Streamlined ePIE code for reconstructing from experimental diffraction patterns
 function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = ePIE_broadband(ePIE_inputs,varargin)
 %varargin = {beta_ap, beta_obj, modeSuppression}
-optional_args = {1 1 0}; %default values for optional parameters
+optional_args = {1 1 0 0 1}; %default values for optional parameters
 nva = length(varargin);
 optional_args(1:nva) = varargin;
-[beta_ap, beta_obj, modeSuppression] = optional_args{:};
+[beta_obj, beta_ap, modeSuppression, probe_norm, fixed_beta] = optional_args{:};
 rng('shuffle','twister');
 %% setup working and save directories
 
@@ -98,6 +98,8 @@ fprintf('gpu flag = %d\n',gpu);
 fprintf('averaging objects = %d\n',averagingConstraint);
 fprintf('complex probe guess = %d\n',apComplexGuess);
 fprintf('probe mask flag = %d\n',probeMaskFlag);
+fprintf('probe normalization = %d\n',probe_norm);
+fprintf('fixed beta_obj = %d\n',fixed_beta);
 fprintf('strong positivity = %d\n',strongPosi);
 fprintf('realness enforced = %d\n',realness);
 fprintf('updating probe = %d\n',updateAp);
@@ -169,6 +171,9 @@ for m = 1:length(lambda)
 
 end
 fourier_error = zeros(iterations,nApert);
+nMode = length(lambda);
+step_size= ones(nMode,1);
+sum_dp = zeros(nMode,1);
 
 %% GPU
 if gpu == 1
@@ -210,6 +215,7 @@ for itt = 1:iterations
 %% calculated magnitudes at scan position aper
         collected_mag = zeros([size(diffpats,1) size(diffpats,2)],cdp);
         for ii = 1:length(lambda)
+        if ~fixed_beta && itt==1, sum_dp(ii)=sum_dp(ii) + sum(abs(temp_dp{ii}(:))).^2;          end
         collected_mag(goodInds) = collected_mag(goodInds) + abs(temp_dp{ii}(goodInds)).^2;
         end
 %% re-weight the magnitudes
@@ -220,7 +226,7 @@ for itt = 1:iterations
 
             new_exit_wave = ifft2(temp_dp{m});
             diff_exit_wave = new_exit_wave - buffer_exit_wave{m};
-            update_factor_ob{m} = conj(aperture{m}) ./ (probe_max{m}.^2);
+            update_factor_ob{m} = step_size(m)*conj(aperture{m}) ./ (probe_max{m}.^2);
             new_rspace = buffer_rspace{m} + update_factor_ob{m}.*beta_obj.*(diff_exit_wave);
              if strongPosi == 1
                  new_rspace(new_rspace < 0) = 0;
@@ -244,16 +250,20 @@ for itt = 1:iterations
             if itt > update_aperture_after && updateAp == 1
                 if modeSuppression == 1 %only update modes 3,6,9,12,15
                     if mod(m,3) == 0
-                        update_factor_pr = beta_ap ./ object_max{m}.^2;
+                        update_factor_pr = step_size(m)*beta_ap ./ object_max{m}.^2;
                         aperture{m} = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
                     end
                 else
-                    update_factor_pr = beta_ap ./ object_max{m}.^2;
+                    update_factor_pr = step_size(m)*beta_ap ./ object_max{m}.^2;
                     aperture{m} = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
                 end
                 if probeMaskFlag == 1
                     aperture{m} = aperture{m} .* probeMask{m};
                 end
+                if probe_norm
+                    rate = max(abs(aperture{m}(:)));
+                    aperture{m} = aperture{m}/rate; %big_obj{m} = big_obj{m}*rate;
+                end                
             end 
 
  
@@ -266,6 +276,10 @@ for itt = 1:iterations
 %         else    
 %             fourier_error(itt,aper) = sum(abs(sqrt(current_dp(goodInds)) - sqrt(collected_mag(goodInds))))./sum(sqrt(current_dp(goodInds)));    
 %         end
+    end
+
+    if ~fixed_beta && itt==1
+        step_size = sum_dp/max(sum_dp)
     end
   
 %% averaging between wavelengths
@@ -371,8 +385,25 @@ end
         
     end
 
+%{
+function [pixelPositions, bigx, bigy] = ...
+    convert_to_pixel_positions_testing5(positions,pixel_size,little_area)
+      
+        pixelPositions = positions./pixel_size;
+        pixelPositions(:,1) = (pixelPositions(:,1)-min(pixelPositions(:,1))); %x goes from 0 to max
+        pixelPositions(:,2) = (pixelPositions(:,2)-min(pixelPositions(:,2))); %y goes from 0 to max
+        pixelPositions(:,1) = (pixelPositions(:,1) - round(max(pixelPositions(:,1))/2)); %x is centrosymmetric around 0
+        pixelPositions(:,2) = (pixelPositions(:,2) - round(max(pixelPositions(:,2))/2)); %y is centrosymmetric around 0
+        
+        bigx = little_area + round(max(pixelPositions(:)))*2+10; % Field of view for full object
+        bigy = little_area + round(max(pixelPositions(:)))*2+10;
 
-
+        big_cent = floor(bigx/2)+1;
+        
+        pixelPositions = pixelPositions + big_cent;
+        
+    end
+%}
 %% 2D guassian smoothing of an image
 
     function [smoothImg,cutoffRad]= smooth2d(img,resolutionCutoff)
