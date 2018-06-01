@@ -1,10 +1,10 @@
 %% Streamlined ePIE code for reconstructing from experimental diffraction patterns
 function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = DR_broadband(ePIE_inputs,varargin)
 %varargin = {beta_ap, beta_obj, modeSuppression}
-optional_args = {0.9, 0.9, 0, 1, 0.1, 0.4, 6, 0}; %default values for optional parameters
+optional_args = {0.9,0.9, 0,1,1, 0.5, 0.1,0.6,4}; %default values for optional parameters
 nva = length(varargin);
 optional_args(1:nva) = varargin;
-[beta_obj, beta_ap, modeSuppression, probe_norm, w_init, w_final, order, semi_implicit_P] = optional_args{:};
+[beta_obj, beta_ap, modeSuppression, probe_norm, fixed_beta, alpha_init, w_init, w_final, order] = optional_args{:};
 rng('shuffle','twister');
 %% setup working and save directories
 
@@ -51,9 +51,14 @@ else
 end
 if isfield(ePIE_inputs, 'probeMaskFlag')
     probeMaskFlag = ePIE_inputs(1).probeMaskFlag;
-else
-    probeMaskFlag = 0;
+else probeMaskFlag = 0;
 end
+
+if isfield(ePIE_inputs, 'supportMaskFlag')
+    supportMaskFlag = ePIE_inputs(1).supportMaskFlag;
+else supportMaskFlag = 0;
+end
+
 if isfield(ePIE_inputs, 'averagingConstraint')
     averagingConstraint = ePIE_inputs(1).averagingConstraint;
 else
@@ -83,6 +88,8 @@ end
 beta_pos = 0.9; % Beta for enforcing positivity
 do_posi = 0;
 update_aperture_itt = 0;
+nModes = length(lambda);
+
 %%
 fprintf('dataset = %s\n',ePIE_inputs.FileName);
 fprintf('output filename = %s\n', filename);
@@ -94,6 +101,8 @@ fprintf('gpu flag = %d\n',gpu);
 fprintf('averaging objects = %d\n',averagingConstraint);
 fprintf('complex probe guess = %d\n',apComplexGuess);
 fprintf('probe mask flag = %d\n',probeMaskFlag);
+fprintf('support mask flag = %d\n',supportMaskFlag);
+fprintf('fix beta obj = %d\n',fixed_beta);
 fprintf('strong positivity = %d\n',strongPosi);
 fprintf('realness enforced = %d\n',realness);
 fprintf('updating probe = %d\n',updateAp);
@@ -104,7 +113,7 @@ fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
 %% Define parameters from data and for reconstruction
 for ii = 1:size(diffpats,3)     %diffpats are intensities in fact
-    diffpats(:,:,ii) = fftshift(diffpats(:,:,ii));
+    diffpats(:,:,ii) = fftshift(sqrt(diffpats(:,:,ii)));
 end
 goodInds = diffpats(:,:,1) ~= -1;
 [N1,N2,nApert] = size(diffpats); % Size of diffraction patterns
@@ -120,10 +129,12 @@ for m = 1:nModes
     centBig = round((bigx+1)/2);
     Y1(:,m) = centrey - floor(N1/2); Y2(:,m) = Y1(:,m)+N1-1;
     X1(:,m) = centrex - floor(N1/2); X2(:,m) = X1(:,m)+N1-1;
+    %
     for aper = 1:nApert
         cropR(aper,:,m) = cropVec+centBig+(centrey(aper)-centBig);
         cropC(aper,:,m) = cropVec+centBig+(centrex(aper)-centBig);
     end
+    %}
     %% create initial aperture?and object guesses
     if aperture{m} == 0
         if apComplexGuess == 1
@@ -149,26 +160,51 @@ for m = 1:nModes
     end
     
     if big_obj{m} == 0
-        big_obj{m} = single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
+        big_obj{m} = single(ones(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
+        %big_obj{m} = ones(bigx,bigy,'single');
         initial_obj{m} = big_obj{m};
     else
         big_obj{m} = single(big_obj{m});
         initial_obj{m} = big_obj{m};
     end
-    %     display(size(big_obj{m}));
     
+    if supportMaskFlag ==1
+        %{
+        radius = round(aperture_radius/pixel_size(m)*1.6);
+        r = floor(bigx/2) - radius + (0:2*radius);
+        support{m} = zeros(bigx,bigy);
+        support{m}(r,r)=1;
+        support{m} = ~support{m};
+        %}
+        %
+        support{m} = zeros(bigx,bigy);
+        mask_obj= logical(aperture{m});
+        for ii=1:nApert
+            support{m}(Y1(ii,m):Y2(ii,m), X1(ii,m):X2(ii,m)) = support{m}(Y1(ii,m):Y2(ii,m), X1(ii,m):X2(ii,m)) | mask_obj;
+        end
+        support{m} = ~support{m};        
+        %}
+    end
+    
+    [XX,YY] = meshgrid(1:bigx,1:bigy);
+    X_cen = floor(bigx/2); Y_cen = floor(bigy/2);
+    R2 = (XX-X_cen).^2 + (YY-Y_cen).^2;
+    Kfilter{m} = exp(-R2/(2*400)^2);Kfilter{m} = single(Kfilter{m}/max(Kfilter{m}(:)));    
 end
+clear XX YY R2
 fourier_error = zeros(iterations,nApert);
-Z =cell(nModes);
+Z =cell(nModes,1);
 for m=1:nModes
-    Z{m} = zeros(N1,N2,nApert);
+    Z{m} = rand(N1,N2,nApert,'single');
 end
 ws = w_init + (w_final-w_init)* ((1:iterations)/iterations).^order;
-z = cell(nModes,1);
+Alpha = alpha_init + (-0.2-alpha_init)* ((1:iterations)/iterations).^2;
+%z = cell(nMode,1);
 u_old = cell(nModes,1);
 z_F = cell(nModes);
-z_u = cell(nModes,1);
+z_O = cell(nModes,1);
 Pu = cell(nModes,1);
+best_obj = cell(m);
 
 %% GPU
 if gpu == 1
@@ -182,135 +218,108 @@ else
     display('========DR reconstructing with CPU========')
 end
 cdp = class(diffpats);
+beta = 0.75;
 
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
 object_max = zeros(nModes,1);
 probe_max = zeros(nModes,1);
+collected_mag = zeros([N1, N2],cdp);
+%weights = [0.5 1 1 1 1 1 1 1 1 1 0.5 ] ;
+step_size = ones(nModes,1);
+sum_dp = zeros(nModes,1);
+
 for itt = 1:iterations
     tic
     w = ws(itt);
+    alpha = Alpha(itt);
     for aper = randperm(nApert)
         current_dp = diffpats(:,:,aper);
+        collected_mag(:)=0;
         
+        %% collect magnitudes
         for m = 1:nModes
-            %bigObjShifted{m} = subPixelShift2(big_obj{m},-1*(centrey{m}(aper)-centBig{m}),-1*(centrex{m}(aper)-centBig{m}));
-            %             bigObjShifted{m} = circshift(big_obj{m}, [-1*(centrey{m}(aper) - centBig{m}) -1*(centrex{m}(aper) - centBig{m})]);
-            %             rspace = croppedOut(bigObjShifted{m},y_kspace);
-            u_old{m} = big_obj{m}(Y1(aper,m):Y2(aper,m), X1(aper,m):X2(aper,m));
-            object_max(m) = max(abs(u_old{m}(:)));
-            probe_max(m) = max(abs(aperture{m}(:)));
+            %u_old{m} = big_obj{m}(Y1(aper,m):Y2(aper,m), X1(aper,m):X2(aper,m));
+            u_old{m} = big_obj{m}(cropR(aper,:,m), cropC(aper,:,m));
             
-            %% Create new exitwave
+            % Create new exitwave
             %weight = sqrt(S(m)) ./ ((sum(abs(aperture{m}(:)).^2)))^0.5;
             Pu{m} = u_old{m}.*aperture{m};
-            z_u{m} = (fft2(Pu{m}));
-            z{m} = Z{m}(:,:,aper);
-            z_F{m} = 2*z_u{m} - z{m};
+            z_O{m} = fft2(Pu{m});
+            %z_F{m} = 2*z_O{m} - Z{m}(:,:,aper);
+            z_F{m} = (1+alpha)*z_O{m} - alpha*Z{m}(:,:,aper);
             %z_F{m} = z_u{m};
-        end        
-        %% calculated magnitudes at scan position aper
-        %         if gpu == 1
-        %             collected_mag = zeros([size(diffpats,1) size(diffpats,2)],'gpuArray');
-        %         else
-        %             collected_mag = zeros([size(diffpats,1) size(diffpats,2)]);
-        %         end
-        %
-        collected_mag = zeros([N1, N2],cdp);
-        for m = 1:nModes
+            %z_F{m} = z_O{m};
             collected_mag = collected_mag + abs(z_F{m}).^2;
-        end
-        %}
-        %collected_mag = sum(abs(z_F).^2,3);
-        %% re-weight the magnitudes       
-        scale = (1-w)*sqrt(complex( current_dp./collected_mag )) + w;
+            if ~fixed_beta && itt==1, sum_dp(m)=sum_dp(m)+ sum( abs(z_F{m}(:)) ); end
+        end        
+
+        %% re-weight the magnitudes
+        collected_mag = sqrt(collected_mag);
+        scale = (1-w)*current_dp./collected_mag + w;
+        %scale = current_dp./collected_mag;
+        fourier_error(itt,aper) = sum( abs(current_dp(goodInds)-collected_mag(goodInds)) )...
+            ./ sum(current_dp(goodInds));
+        
+        %% update object & probe
         for m = 1:nModes
-            %             if gpu == 1
-            z_F{m}(goodInds) =  scale(goodInds).* z_F{m}(goodInds) ;
-            %             else
-            %                 temp_dp{m}(goodInds) = sqrt(current_dp(goodInds)) .* temp_dp{m}(goodInds) ...
-            %                     ./ sqrt(collected_mag(goodInds)); %enforcing sum of magnitudes
-            %             end
-            %% Update the object
-            z{m} = z{m} + z_F{m} - z_u{m};
-            %z{m} = z_F{m};
-            Z{m}(:,:,aper) = z{m};
+            z_F{m}(goodInds) =  scale(goodInds).*z_F{m}(goodInds);
+            %z = Z{m}(:,:,aper) + (z_F{m} - z_O{m});
+            z = z_F{m} + alpha*(Z{m}(:,:,aper) - z_O{m});
+            %z = 0.5*(z_F{m} +  Z{m}(:,:,aper)); % T = 0.5( F(2O-I) + I )
+            %z = 2*z_F{m} - z_O{m};
+            %z = beta*(z_F{m} + Z{m}(:,:,aper)) + (1-2*beta)*z_O{m};
+            Z{m}(:,:,aper) = z;
             
-            Pu_new = ifft2(z{m});
-            diff_exit_wave = Pu_new - Pu{m};
+            Pu_new = ifft2(z);
+            %diff = Pu_new- Pu{m};
  
-            dt = beta_obj/probe_max(m)^2;
-            u_new = ( ((1-beta_obj)/dt)*u_old{m} + Pu_new.*conj(aperture{m})) ./ ( (1-beta_obj)/dt + abs(aperture{m}).^2 );
-            %u_new = u_old{m} + dt*conj(aperture{m}).*diff_exit_wave;
+            probe_max(m) = max(abs(aperture{m}(:)));
+            dt = step_size(m)*beta_obj/probe_max(m)^2;
+            u_new = ( ((1-beta_obj)/dt)*u_old{m} + Pu_new.*conj(aperture{m}))./ ...
+                ( (1-beta_obj)/dt + abs(aperture{m}).^2 );
+            %u_new = u_old{m} + dt*conj(aperture{m}).*diff;
             
-            if strongPosi == 1
-                u_new(u_new < 0) = 0;
-            end
-            
+            if realness == 1,u_new = real(u_new); end
+            if strongPosi == 1,u_new(u_new < 0) = 0;end            
             if do_posi == 1 && strongPosi == 0
-                display('weak posi')
                 u_new(u_new < 0) = u_old{m}(u_new < 0) - beta_pos.*u_new(u_new < 0);
             end
+                       
+            %big_obj{m}(Y1(aper,m):Y2(aper,m), X1(aper,m):X2(aper,m)) = u_new;
+            big_obj{m}(cropR(aper,:,m), cropC(aper,:,m)) = u_new;
+            if supportMaskFlag , big_obj{m}(support{m})=0; end
+            %if itt==10, FU = fftshift(fft2(big_obj{m})).*Kfilter{m}; big_obj{m} = ifft2(ifftshift(FU)); end
             
-            if realness == 1
-                u_new = real(u_new);
-            end
-            big_obj{m}(Y1(aper,m):Y2(aper,m), X1(aper,m):X2(aper,m)) = u_new;
-            %             bigObjShifted{m} = replaceROI(bigObjShifted{m},new_rspace{m});
-            %             big_obj{m} = subPixelShift2(bigObjShifted{m},1*(centrey{m}(aper)-centBig{m}),1*(centrex{m}(aper)-centBig{m}));
-            %             big_obj{m} = circshift(bigObjShifted{m}, [1*(centrey{m}(aper) - centBig{m}) 1*(centrex{m}(aper)-centBig{m})]);
-            
-            %% Update the probe
-            
-            if itt > update_aperture_itt && updateAp == 1
-                if modeSuppression == 1 %only update modes 3,6,9,12,15
-                    if mod(m,3) == 0
-                        update_factor_pr = beta_ap ./ object_max(m).^2;
-                        aperture{m} = aperture{m} +update_factor_pr*conj(u_old{m}).*(diff_exit_wave);
-                    end
-                else
-                    update_factor_pr = beta_ap ./ object_max(m).^2;
-                    aperture{m} = aperture{m} +update_factor_pr*conj(u_old{m}).*(diff_exit_wave);
+            % Update the probe          
+            if itt > update_aperture_itt && updateAp == 1 && itt~=10
+                if modeSuppression==0 || mod(m,3)~=0
+                    object_max(m) = max(abs(u_new(:)));
+                    ds = step_size(m)*beta_ap ./ object_max(m).^2;
+                    %aperture{m} = aperture{m} +ds*conj(u_old{m}).*(diff);
+                    %aperture{m} = ((1-beta_ap)*aperture{m} + ds*Pu_new.*conj(u_old{m})) ./ ( (1-beta_ap) + ds*abs(u_old{m}).^2 );
+                    aperture{m} = ((1-beta_ap)*aperture{m} + ds*Pu_new.*conj(u_new)) ./ ( (1-beta_ap) + ds*abs(u_new).^2 );
                 end
-                if probeMaskFlag == 1
-                    aperture{m} = aperture{m} .* probeMask{m};
-                end
+                if probeMaskFlag==1, aperture{m}=aperture{m}.*probeMask{m}; end
+                if probe_norm, aperture{m} = aperture{m}/max(abs(aperture{m}(:)));  end
             end
-            %{
-            ratio = max(max(abs(aperture{m})));
-            if probe_norm == 1
-                aperture{m} = aperture{m}/ratio;
-            end
-            %}
             
-            %% update the weights
-            %S(m) = sum(abs(aperture{m}(:)).^2);
-            %
-            if m==4 && mod(aper,100)==0
-                %[dim1,dim2] = size(big_obj{m});
-                %r = floor(dim1/2)+ (-64:64); c = floor(dim2/2)+ (-64:64);
-                figure(m);
-                subplot(1,2,1); imagesc(abs(big_obj{m})); colormap jet; axis image; set(gca,'YTick',[],'XTick',[]); colorbar
-                subplot(1,2,2); imagesc(abs(aperture{m})); colormap jet; axis image; set(gca,'YTick',[],'XTick',[]); colorbar
-                drawnow;
-            end
-            %}
+            % update the weights
+            S(m) = sum(abs(aperture{m}(:)).^2);
         end
-        %         if gpu == 1
-        fourier_error(itt,aper) = sum(abs(sqrt(complex(current_dp(goodInds)))...
-            - sqrt(complex(collected_mag(goodInds)))))./sum(sqrt(complex(current_dp(goodInds))));
-        %         else
-        %             fourier_error(itt,aper) = sum(abs(sqrt(current_dp(goodInds)) - sqrt(collected_mag(goodInds))))./sum(sqrt(current_dp(goodInds)));
-        %         end
-
     end 
-    % show images
+    if ~fixed_beta && itt==1, step_size = sum_dp/max(sum_dp) 
+    end
+    %% show images
     for m=1:nModes
-        [dim1,dim2] = size(big_obj{m});
-        r = floor(dim1/2)+ (-128:128); c = floor(dim2/2)+ (-128:128);
-        figure(m); imagesc(abs(big_obj{m}(r,c))); colormap jet; axis image; set(gca,'YTick',[],'XTick',[]); colorbar
+        [dim1,~] = size(big_obj{m});
+        r = floor(dim1/2)+ (-90:90); c = floor(N1/2)+ (-90:90);
+        figure(m); 
+        subplot(1,2,1); imagesc(abs(big_obj{m}(r,r))); colormap jet; axis image; set(gca,'YTick',[],'XTick',[]); colorbar
+        subplot(1,2,2); imagesc(abs(aperture{m}(c,c))); colormap jet; axis image; set(gca,'YTick',[],'XTick',[]); colorbar
         drawnow;
     end
+    %}
     
     %% averaging between wavelengths
     if averagingConstraint == 1
