@@ -172,7 +172,7 @@ end
 fourier_error = zeros(iterations,nApert);
 %% probe replacement parameters
 scaling_ratio = max(pixel_size(central_mode)./pixel_size, pixel_size ./ pixel_size(central_mode));
-for mm = 1:M
+for mm = 1:length(lambda)
     scoop_size = round(little_area/scaling_ratio(mm));
     scoop_center = round((scoop_size+1)/2);
     scoop_vec{mm} = (1:scoop_size) - scoop_center + little_cent;
