@@ -269,7 +269,7 @@ for itt = 1:iterations
                 else
                     probe_replaced = aperture_updated;
                 end
-                aperture{m} = aperture_updated + probe_replacement_weight(iter)*(probe_replaced-aperture_updated);
+                aperture{m} = aperture_updated + probe_replacement_weight(itt)*(probe_replaced-aperture_updated);
             end 
 
  
