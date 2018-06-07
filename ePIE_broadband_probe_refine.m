@@ -28,7 +28,7 @@ job_ID = job_ID(~isspace(job_ID));
 nModes = length(pixel_size);
 central_mode = ePIE_inputs.central_mode; %best mode for probe replacement
 fresnel_dist = ePIE_inputs.fresnel_dist; %probe to sample
-filename = strcat('reconstruction_',filename,'_',job_ID);
+filename = strcat('reconstruction_probe_replace_',filename,'_',job_ID);
 filename = strrep(filename,'__','_');
 %% parameter inputs
 if isfield(ePIE_inputs, 'saveOutput')
