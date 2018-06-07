@@ -253,7 +253,7 @@ for itt = 1:iterations
                     central_probe_cropped = central_probe(scoop_vec{m}, scoop_vec{m});
                     Fcentral_probe_cropped = my_fft(central_probe_cropped);
                     probe_backprop = fresnel_advance(aperture{m},pixel_size(m),pixel_size(m),...
-                        -fresnel_dist, lamdba(m));
+                        -fresnel_dist, lambda(m));
                     Fprobe_backprop = my_fft(probe_backprop);
                     Fprobe_backprop(scoop_vec{m},scoop_vec{m}) = Fcentral_probe_cropped;
                     probe_replaced = my_ifft(Fprobe_backprop);
