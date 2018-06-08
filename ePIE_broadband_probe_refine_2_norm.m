@@ -277,7 +277,7 @@ for itt = 1:iterations
                 else
                     probe_rpl = ap_updated;
                 end
-                ap_buffer = ((1-prb_rplmnt_weight(itt)).*ap_updated + prb_rplmnt_weight(itt)*(probe_rpl-ap_updated));
+                ap_buffer = ap_updated + prb_rplmnt_weight(itt)*(probe_rpl-ap_updated);
                 aperture{m} = norm(ap_updated,'fro')/norm(ap_buffer,'fro')...
                     .*ap_buffer;
             end 
