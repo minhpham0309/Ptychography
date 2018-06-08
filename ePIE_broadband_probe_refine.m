@@ -249,7 +249,7 @@ for itt = 1:iterations
                     ,pixel_size(central_mode),-fresnel_dist,lambda(central_mode));
                 update_factor_pr = beta_ap ./ object_max{m}.^2;
                 aperture_updated = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
-                if m > central_mode
+                if pixel_size(central_mode) > pixel_size(m) %m > central_mode
                     central_probe_cropped = central_probe(scoop_vec{m}, scoop_vec{m});
                     Fcentral_probe_cropped = my_fft(central_probe_cropped);
                     probe_backprop = fresnel_advance(aperture{m},pixel_size(m),pixel_size(m),...
@@ -259,7 +259,7 @@ for itt = 1:iterations
                     probe_replaced = my_ifft(Fprobe_backprop);
                     probe_replaced = fresnel_advance(probe_replaced,pixel_size(m),...
                         pixel_size(m),fresnel_dist,lambda(m));
-                elseif m < central_mode
+                elseif pixel_size(central_mode) < pixel_size(m) 
                     Fcentral_probe = my_fft(central_probe);
                     Fcentral_probe_cropped = Fcentral_probe(scoop_vec{m}, scoop_vec{m});
                     probe_replaced = zeros(little_area,cdp); %match class of other arrays
