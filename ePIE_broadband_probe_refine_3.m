@@ -28,7 +28,7 @@ job_ID = job_ID(~isspace(job_ID));
 nModes = length(pixel_size);
 central_mode = ePIE_inputs.central_mode; %best mode for probe replacement
 fresnel_dist = ePIE_inputs.fresnel_dist; %probe to sample
-filename = strcat('reconstruction_probe_replace_2_norm_',filename,'_',job_ID);
+filename = strcat('reconstruction_probe_replace_3',filename,'_',job_ID);
 filename = strrep(filename,'__','_');
 %% parameter inputs
 if isfield(ePIE_inputs, 'saveOutput')
@@ -207,14 +207,14 @@ end
 
 %% GPU
 if gpu == 1
-    display('========ePIE probe refine(method 2 with normalization) reconstructing with GPU========')
+    display('========ePIE probe refine(method 3) reconstructing with GPU========')
     diffpats = gpuArray(diffpats);
     fourier_error = gpuArray(fourier_error);
     big_obj = cellfun(@gpuArray, big_obj, 'UniformOutput', false);
     aperture = cellfun(@gpuArray, aperture, 'UniformOutput', false);
     S = gpuArray(S);
 else
-    display('========ePIE probe refine(method 2 with normalization) reconstructing with CPU========')
+    display('========ePIE probe refine(method 3) reconstructing with CPU========')
 end
 cdp = class(diffpats);
 
