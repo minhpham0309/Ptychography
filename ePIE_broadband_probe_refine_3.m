@@ -222,8 +222,10 @@ cdp = class(diffpats);
 disp('========beginning reconstruction=======');
 for itt = 1:iterations
     itt
+    count = 0;
     tic
     for aper = randperm(nApert)
+        count = count+1; 
         current_dp = diffpats(:,:,aper);
         
         for m = 1:length(lambda)
@@ -274,30 +276,34 @@ for itt = 1:iterations
 %                 central_probe = fresnel_advance(aperture{central_mode},pixel_size(central_mode)...
 %                     ,pixel_size(central_mode),-fresnel_dist,lambda(central_mode));
                 update_factor_pr = beta_ap ./ object_max{m}.^2;
-                ap_updated = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
-                if scoop_range(m) > little_area %higher energy than central mode
-                    Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
-                    Fprobe_replaced = padarray(Fcentral_probe,...
-                        [pad_pre(m) pad_pre(m)],'pre');
-                    Fprobe_replaced = padarray(Fprobe_replaced,...
-                        [pad_post(m) pad_post(m)],'post');
-                    probe_rpl = my_ifft(Fprobe_replaced);
-                    probe_rpl = probe_rpl(pad_pre(m)+1:end-pad_post(m),pad_pre(m)+1:end-pad_post(m));
-%                     probe_rpl = my_ifft(my_fft(probe_rpl).*H_fwd{m});
-                    probe_rpl = ifftn((fftn(probe_rpl).*H_fwd{m}));
-                elseif scoop_range(m) < little_area %lower energy than central mode
-                    Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
-                    Fcentral_probe_cropped = Fcentral_probe(scoop_vec{m}, scoop_vec{m});
-                    probe_rpl = zeros(little_area,cdp); %match class of other arrays
-                    probe_rpl(scoop_vec{m},scoop_vec{m}) = my_ifft(Fcentral_probe_cropped);
-%                     probe_rpl = my_ifft(my_fft(probe_rpl).*H_fwd{m});
-                    probe_rpl = ifftn(fftn(probe_rpl).*H_fwd{m});
+                if count < (nApert/3)
+                    ap_updated = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
+                    if scoop_range(m) > little_area %higher energy than central mode
+                        Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
+                        Fprobe_replaced = padarray(Fcentral_probe,...
+                            [pad_pre(m) pad_pre(m)],'pre');
+                        Fprobe_replaced = padarray(Fprobe_replaced,...
+                            [pad_post(m) pad_post(m)],'post');
+                        probe_rpl = my_ifft(Fprobe_replaced);
+                        probe_rpl = probe_rpl(pad_pre(m)+1:end-pad_post(m),pad_pre(m)+1:end-pad_post(m));
+    %                     probe_rpl = my_ifft(my_fft(probe_rpl).*H_fwd{m});
+                        probe_rpl = ifftn((fftn(probe_rpl).*H_fwd{m}));
+                    elseif scoop_range(m) < little_area %lower energy than central mode
+                        Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
+                        Fcentral_probe_cropped = Fcentral_probe(scoop_vec{m}, scoop_vec{m});
+                        probe_rpl = zeros(little_area,cdp); %match class of other arrays
+                        probe_rpl(scoop_vec{m},scoop_vec{m}) = my_ifft(Fcentral_probe_cropped);
+    %                     probe_rpl = my_ifft(my_fft(probe_rpl).*H_fwd{m});
+                        probe_rpl = ifftn(fftn(probe_rpl).*H_fwd{m});
+                    else
+                        probe_rpl = ap_updated;
+                    end
+                    ap_buffer = ap_updated + prb_rplmnt_weight(itt)*(probe_rpl-ap_updated);
+                    aperture{m} = norm(ap_updated,'fro')/norm(ap_buffer,'fro')...
+                        .*ap_buffer;
                 else
-                    probe_rpl = ap_updated;
+                    aperture{m} = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
                 end
-                ap_buffer = ap_updated + prb_rplmnt_weight(itt)*(probe_rpl-ap_updated);
-                aperture{m} = norm(ap_updated,'fro')/norm(ap_buffer,'fro')...
-                    .*ap_buffer;
             end 
 
  
