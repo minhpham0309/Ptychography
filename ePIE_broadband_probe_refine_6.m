@@ -280,41 +280,48 @@ for itt = 1:iterations
             if itt > update_aperture_after && updateAp == 1
                 update_factor_pr = beta_ap ./ object_max{m}.^2;
                 ap_updated_buffer{m} = aperture{m}+update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
-%                 ap_padded = padarray(aperture{m}, [pad_pre(m) pad_pre(m)], 'pre');
-%                 ap_padded = padarray(ap_padded, [pad_post(m) pad_post(m)], 'post');
-%                 Fpinh = my_fft(ap_padded).*H_bk{m}; 
-                Fpinh = my_fft(aperture{m}).*H_bk{m}; %back propagate
-                Fpinh_cropped = Fpinh(scoop_vec{m}, scoop_vec{m}); %crop to q min
-                pinh_cropped = my_ifft(Fpinh_cropped);
-                pinh_pad = NaN(little_area,little_area); 
-                pinh_pad(scoop_vec{m},scoop_vec{m}) = pinh_cropped; %pad to interpolate to k-space pixel size of lowest energy
-                
-%                 avgFpinh(:,:,m) = my_fft(pinh_pad); %all have same k-space pixel size and q vector
-%                 figure(99);imagesc(abs(avgFpinh(:,:,m))),axis image; pause
-                avg_pinh(:,:,m) = pinh_pad;
+                randVal = rand;
+                if randVal > 0.8
+    %                 ap_padded = padarray(aperture{m}, [pad_pre(m) pad_pre(m)], 'pre');
+    %                 ap_padded = padarray(ap_padded, [pad_post(m) pad_post(m)], 'post');
+    %                 Fpinh = my_fft(ap_padded).*H_bk{m}; 
+                    Fpinh = my_fft(aperture{m}).*H_bk{m}; %back propagate
+                    Fpinh_cropped = Fpinh(scoop_vec{m}, scoop_vec{m}); %crop to q min
+                    pinh_cropped = my_ifft(Fpinh_cropped);
+                    pinh_pad = NaN(little_area,little_area); 
+                    pinh_pad(scoop_vec{m},scoop_vec{m}) = pinh_cropped; %pad to interpolate to k-space pixel size of lowest energy
+
+    %                 avgFpinh(:,:,m) = my_fft(pinh_pad); %all have same k-space pixel size and q vector
+    %                 figure(99);imagesc(abs(avgFpinh(:,:,m))),axis image; pause
+                    avg_pinh(:,:,m) = pinh_pad;
+                else
+                    aperture{m} = ap_updated_buffer{m};
+                end
             end 
     
         end
   %% averaging probes
-        if itt > update_aperture_after && updateAp == 1
-%             avgFpinh = mean(avgFpinh,3);
-%             avg_pinh = my_ifft(avgFpinh);
-            avg_pinh = mean(avg_pinh,3,'omitnan');
-            figure(99);imagesc(real(avg_pinh)),axis image;title(num2str(rand));
-            pause(0.1);
-            for m = 1:length(lambda)
-                pinh_crop = avg_pinh(scoop_vec{m},scoop_vec{m}); %crop in real space (bin to correct k-space pixel size with same qmin)
-                Fpinh_crop = my_fft(pinh_crop);
-                Fpinh= my_fft(ap_updated_buffer{m}); %original updated probe with full q vector
-                Fpinh(scoop_vec{m},scoop_vec{m}) = Fpinh_crop; %replace up to qmin with average values
-%                 pinh = my_ifft(Fpinh);
-%                 pinh_cropped = insertZeros(pinh_cropped, little_area);
-                probe_rpl = my_ifft(Fpinh.*H_fwd{m}); %propagate back to sample plane
-%                 probe_rpl = my_ifft(avgFpinh(scoop_vec{m}, scoop_vec{m}).* H_fwd{m}(scoop_vec{m},scoop_vec{m}));
-%                 probe_rpl = insertZeros(probe_rpl,little_area); %lazy, make faster before full deployment
-%                 ap_buffer = (1-prb_rplmnt_weight(itt))*ap_updated_buffer{m} + prb_rplmnt_weight(itt)*probe_rpl;
-                ap_buffer = ap_updated_buffer{m} + prb_rplmnt_weight(itt)*(probe_rpl - ap_updated_buffer{m});
-                aperture{m} = norm(ap_updated_buffer{m},'fro')./norm(ap_buffer,'fro').*ap_buffer;
+        if randVal > 0.8;
+            if itt > update_aperture_after && updateAp == 1
+    %             avgFpinh = mean(avgFpinh,3);
+    %             avg_pinh = my_ifft(avgFpinh);
+                avg_pinh = mean(avg_pinh,3,'omitnan');
+    %             figure(99);imagesc(real(avg_pinh)),axis image;title(num2str(rand));
+    %             pause(0.1);
+                for m = 1:length(lambda)
+                    pinh_crop = avg_pinh(scoop_vec{m},scoop_vec{m}); %crop in real space (bin to correct k-space pixel size with same qmin)
+                    Fpinh_crop = my_fft(pinh_crop);
+                    Fpinh= my_fft(ap_updated_buffer{m}); %original updated probe with full q vector
+                    Fpinh(scoop_vec{m},scoop_vec{m}) = Fpinh_crop; %replace up to qmin with average values
+    %                 pinh = my_ifft(Fpinh);
+    %                 pinh_cropped = insertZeros(pinh_cropped, little_area);
+                    probe_rpl = my_ifft(Fpinh.*H_fwd{m}); %propagate back to sample plane
+    %                 probe_rpl = my_ifft(avgFpinh(scoop_vec{m}, scoop_vec{m}).* H_fwd{m}(scoop_vec{m},scoop_vec{m}));
+    %                 probe_rpl = insertZeros(probe_rpl,little_area); %lazy, make faster before full deployment
+    %                 ap_buffer = (1-prb_rplmnt_weight(itt))*ap_updated_buffer{m} + prb_rplmnt_weight(itt)*probe_rpl;
+                    ap_buffer = ap_updated_buffer{m} + prb_rplmnt_weight(itt)*(probe_rpl - ap_updated_buffer{m});
+                    aperture{m} = norm(ap_updated_buffer{m},'fro')./norm(ap_buffer,'fro').*ap_buffer;
+                end
             end
         end
     %% update the weights
