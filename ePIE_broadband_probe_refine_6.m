@@ -284,10 +284,11 @@ for itt = 1:iterations
 %                 ap_padded = padarray(ap_padded, [pad_post(m) pad_post(m)], 'post');
 %                 Fpinh = my_fft(ap_padded).*H_bk{m}; 
                 Fpinh = my_fft(aperture{m}).*H_bk{m}; %back propagate
-                Fpinh_cropped = Fpinh(scoop_vec{m}, scoop_vec{m}); %crop to equal smallest q vector(qmin)
+                Fpinh_cropped = Fpinh(scoop_vec{m}, scoop_vec{m}); %crop to q min
                 pinh_cropped = my_ifft(Fpinh_cropped);
-                pinh_pad = zeros(little_area,little_area); 
+                pinh_pad = NaN(little_area,little_area); 
                 pinh_pad(scoop_vec{m},scoop_vec{m}) = pinh_cropped; %pad to interpolate to k-space pixel size of lowest energy
+                
 %                 avgFpinh(:,:,m) = my_fft(pinh_pad); %all have same k-space pixel size and q vector
 %                 figure(99);imagesc(abs(avgFpinh(:,:,m))),axis image; pause
                 avg_pinh(:,:,m) = pinh_pad;
@@ -298,7 +299,7 @@ for itt = 1:iterations
         if itt > update_aperture_after && updateAp == 1
 %             avgFpinh = mean(avgFpinh,3);
 %             avg_pinh = my_ifft(avgFpinh);
-            avg_pinh = mean(avg_pinh,3);
+            avg_pinh = mean(avg_pinh,3,'omitnan');
             figure(99);imagesc(real(avg_pinh)),axis image;title(num2str(rand));
             pause(0.1);
             for m = 1:length(lambda)
