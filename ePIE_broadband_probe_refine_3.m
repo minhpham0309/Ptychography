@@ -274,7 +274,7 @@ for itt = 1:iterations
 %                 central_probe = fresnel_advance(aperture{central_mode},pixel_size(central_mode)...
 %                     ,pixel_size(central_mode),-fresnel_dist,lambda(central_mode));
                 update_factor_pr = beta_ap ./ object_max{m}.^2;
-                if rand > 0.67
+                if rand > 0.9
                     ap_updated = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
                     if scoop_range(m) > little_area %higher energy than central mode
                         Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
