@@ -234,6 +234,7 @@ for itt = 1:iterations
     for aper = randperm(nApert)
         if rand > 0.9 && itt < 20 && itt > 5
             probe_refinement_flag = 1;
+            pinhs = zeros(little_area,little_area,nModes);
         else
             probe_refinement_flag = 0;
         end
@@ -257,7 +258,6 @@ for itt = 1:iterations
 %% re-weight the magnitudes
         mag_ratio = sqrt(complex(current_dp(goodInds))) ./ sqrt(complex(collected_mag(goodInds)));
 %         avgFpinh = zeros(little_area,little_area,nModes); 
-        pinhs = zeros(little_area,little_area,nModes);
         for m = 1:length(lambda)
                 temp_dp{m}(goodInds) = mag_ratio .* temp_dp{m}(goodInds);
 %% Update the object
@@ -303,6 +303,7 @@ for itt = 1:iterations
                     pinhs(:,:,m) = fft2(pinh);
                 else %update aperture as normal
                     aperture{m} = aperture{m}+update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
+                    S(m) = sum(abs(aperture{m}(:)).^2);
                 end
             end
         end
@@ -333,15 +334,13 @@ for itt = 1:iterations
                     end
                     ap_buffer = ap_updated_buffer{m} + prb_rplmnt_weight(itt)*(probe_rpl - ap_updated_buffer{m});
                     aperture{m} = norm(ap_updated_buffer{m},'fro')./norm(ap_buffer,'fro').*ap_buffer;
+                    S(m) = sum(abs(aperture{m}(:)).^2);
                 end
             end
         end
-    %% update the weights
-        S(m) = sum(abs(aperture{m}(:)).^2);
     %% compute R factor
         fourier_error(itt,aper) = sum(abs(sqrt(complex(current_dp(goodInds)))...
             - sqrt(complex(collected_mag(goodInds)))))./sum(sqrt(complex(current_dp(goodInds))));
-        probe_refinement_flag = 0; %reset
     end       
     mean_err = sum(fourier_error(itt,:),2)/nApert;
      
