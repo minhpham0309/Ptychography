@@ -232,7 +232,7 @@ for itt = 1:iterations
     count = 0;
     tic
     for aper = randperm(nApert)
-        if rand > 0.9 && itt < 20
+        if rand > 0.9 && itt < 20 && itt > 5
             probe_refinement_flag = 1;
         else
             probe_refinement_flag = 0;
