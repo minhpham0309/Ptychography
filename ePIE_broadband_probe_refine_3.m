@@ -225,7 +225,11 @@ for itt = 1:iterations
     tic
     for aper = randperm(nApert) 
         current_dp = diffpats(:,:,aper);
-        
+        if rand > 0.9
+            probe_refinement_flag = 1;
+        else
+            probe_refinement_flag = 0;
+        end
         for m = 1:length(lambda)
             rspace = big_obj{m}(cropR(aper,:,m), cropC(aper,:,m));
             buffer_rspace{m} = rspace;
@@ -274,7 +278,7 @@ for itt = 1:iterations
 %                 central_probe = fresnel_advance(aperture{central_mode},pixel_size(central_mode)...
 %                     ,pixel_size(central_mode),-fresnel_dist,lambda(central_mode));
                 update_factor_pr = beta_ap ./ object_max{m}.^2;
-                if rand > 0.9
+                if probe_refinement_flag == 1
                     ap_updated = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
                     if scoop_range(m) > little_area %higher energy than central mode
                         Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
@@ -308,8 +312,9 @@ for itt = 1:iterations
   %% update the weights
             S(m) = sum(abs(aperture{m}(:)).^2);  
         end
-            fourier_error(itt,aper) = sum(abs(sqrt(complex(current_dp(goodInds)))...
-                - sqrt(complex(collected_mag(goodInds)))))./sum(sqrt(complex(current_dp(goodInds))));
+        fourier_error(itt,aper) = sum(abs(sqrt(complex(current_dp(goodInds)))...
+            - sqrt(complex(collected_mag(goodInds)))))./sum(sqrt(complex(current_dp(goodInds))));
+        probe_refinement_flag = 0; %reset    
     end
   
 %% averaging between wavelengths
