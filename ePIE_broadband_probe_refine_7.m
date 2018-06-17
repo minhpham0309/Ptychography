@@ -81,6 +81,16 @@ if isfield(ePIE_inputs, 'update_aperture_after');
 else
     update_aperture_after = 0;
 end
+if isfield(ePIE_inputs, 'refine_aperture_after');
+    refine_aperture_after = ePIE_inputs.refine_aperture_after;
+else
+    refine_aperture_after = 0;
+end
+if isfield(ePIE_inputs, 'refine_aperture_until');
+    refine_aperture_until = ePIE_inputs.refine_aperture_until;
+else
+    refine_aperture_until = Inf;
+end
 if isfield(ePIE_inputs, 'miscNotes')
     miscNotes = ePIE_inputs.miscNotes;
 else
@@ -108,6 +118,8 @@ fprintf('updating probe after iteration %d\n',update_aperture_after);
 fprintf('mode suppression = %d\n',modeSuppression);
 fprintf('fresnel distance = %f\n',fresnel_dist);
 fprintf('central mode = %d\n',central_mode);
+fprintf('refining probe after iteration %d\n',refine_aperture_after);
+fprintf('refining probe until iteration %d\n',refine_aperture_until);
 fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
 %% Define parameters from data and for reconstruction
@@ -232,7 +244,7 @@ for itt = 1:iterations
     count = 0;
     tic
     for aper = randperm(nApert)
-        if rand > 0.9 && itt < 20 && itt > 5
+        if rand > 0.9 && itt >= refine_aperture_after && itt <= refine_aperture_until
             probe_refinement_flag = 1;
             pinhs = zeros(little_area,little_area,nModes);
         else
