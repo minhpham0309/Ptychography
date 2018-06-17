@@ -246,7 +246,7 @@ for itt = 1:iterations
     for aper = randperm(nApert)
         if rand > 0.9 && itt >= refine_aperture_after && itt <= refine_aperture_until
             probe_refinement_flag = 1;
-            pinhs = zeros(little_area,little_area,nModes);
+            pinhs = zeros(little_area,little_area,nModes,cdp);
         else
             probe_refinement_flag = 0;
         end
@@ -322,10 +322,10 @@ for itt = 1:iterations
   %% averaging probes
         if probe_refinement_flag == 1
             if itt > update_aperture_after && updateAp == 1
-               aligned_pinhs = zeros(size(pinhs));
+               aligned_pinhs = zeros(size(pinhs),cdp);
                aligned_pinhs(:,:,1) = ifft2(pinhs(:,:,1));
                for ii = 2:nModes
-                   [~,aligned_pinhs(:,:,ii)] = dftregistration(pinhs(:,:,1), pinhs(:,:,ii), 100);
+                   [~,aligned_pinhs(:,:,ii)] = dftregistration_2(pinhs(:,:,1), pinhs(:,:,ii), 100);
                end
                avg_pinh = ifft2(mean(aligned_pinhs,3));
                 for m = 1:length(lambda)
