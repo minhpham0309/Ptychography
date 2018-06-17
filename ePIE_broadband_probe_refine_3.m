@@ -81,6 +81,16 @@ if isfield(ePIE_inputs, 'update_aperture_after');
 else
     update_aperture_after = 0;
 end
+if isfield(ePIE_inputs, 'refine_aperture_after');
+    refine_aperture_after = ePIE_inputs.update_aperture_after;
+else
+    refine_aperture_after = 0;
+end
+if isfield(ePIE_inputs, 'refine_aperture_until');
+    refine_aperture_until = ePIE_inputs.update_aperture_until;
+else
+    refine_aperture_until = Inf;
+end
 if isfield(ePIE_inputs, 'miscNotes')
     miscNotes = ePIE_inputs.miscNotes;
 else
@@ -105,6 +115,8 @@ fprintf('realness enforced = %d\n',realness);
 fprintf('updating probe = %d\n',updateAp);
 fprintf('enforcing positivity = %d\n',do_posi);
 fprintf('updating probe after iteration %d\n',update_aperture_after);
+fprintf('refining probe after iteration %d\n',refine_aperture_after);
+fprintf('refining probe until iteration %d\n',refine_aperture_until);
 fprintf('mode suppression = %d\n',modeSuppression);
 fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
@@ -225,7 +237,7 @@ for itt = 1:iterations
     tic
     for aper = randperm(nApert) 
         current_dp = diffpats(:,:,aper);
-        if rand > 0.9
+        if rand > 0.9 && itt >= refine_aperture_after && itt <= refine_aperture_until
             probe_refinement_flag = 1;
         else
             probe_refinement_flag = 0;
