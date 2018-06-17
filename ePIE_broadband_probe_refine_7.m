@@ -302,7 +302,7 @@ for itt = 1:iterations
                         Fpinh_cropped = Fpinh(scoop_vec{m}, scoop_vec{m}); %crop to q central_mode
                         pinh_cropped = my_ifft(Fpinh_cropped);
                         %pinh = NaN(little_area,little_area); 
-                        pinh = zeros(little_area,little_area);
+                        pinh = zeros(little_area,little_area,cdp);
                         pinh(scoop_vec{m},scoop_vec{m}) = pinh_cropped; %pad to interpolate to k-space pixel size of central mode
                     elseif pixel_size(m) > pixel_size(central_mode)
                         Fpinh_padded = padarray(Fpinh, [pad_pre(m) pad_pre(m)], 'pre');
