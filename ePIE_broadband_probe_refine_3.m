@@ -82,12 +82,12 @@ else
     update_aperture_after = 0;
 end
 if isfield(ePIE_inputs, 'refine_aperture_after');
-    refine_aperture_after = ePIE_inputs.update_aperture_after;
+    refine_aperture_after = ePIE_inputs.refine_aperture_after;
 else
     refine_aperture_after = 0;
 end
 if isfield(ePIE_inputs, 'refine_aperture_until');
-    refine_aperture_until = ePIE_inputs.update_aperture_until;
+    refine_aperture_until = ePIE_inputs.refine_aperture_until;
 else
     refine_aperture_until = Inf;
 end
@@ -118,6 +118,8 @@ fprintf('updating probe after iteration %d\n',update_aperture_after);
 fprintf('refining probe after iteration %d\n',refine_aperture_after);
 fprintf('refining probe until iteration %d\n',refine_aperture_until);
 fprintf('mode suppression = %d\n',modeSuppression);
+fprintf('fresnel distance = %f\n',fresnel_dist);
+fprintf('central mode = %d\n',central_mode);
 fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
 %% Define parameters from data and for reconstruction
