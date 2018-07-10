@@ -125,6 +125,7 @@ fprintf('refining probe until iteration %d\n',refine_aperture_until);
 fprintf('mode suppression = %d\n',modeSuppression);
 fprintf('fresnel distance = %f\n',fresnel_dist);
 fprintf('central mode = %d\n',central_mode);
+fprintf('probe replacement frequency = %f\n',1-probe_repl_freq);
 fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
 %% Define parameters from data and for reconstruction
