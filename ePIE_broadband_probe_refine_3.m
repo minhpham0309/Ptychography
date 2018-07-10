@@ -91,6 +91,11 @@ if isfield(ePIE_inputs, 'refine_aperture_until');
 else
     refine_aperture_until = Inf;
 end
+if isfield(ePIE_inputs, 'probe_repl_freq')
+    probe_repl_freq = ePIE_inputs(1).probe_repl_freq;
+else
+    probe_repl_freq = 0.9; %10% replacement frequency
+end
 if isfield(ePIE_inputs, 'miscNotes')
     miscNotes = ePIE_inputs.miscNotes;
 else
@@ -239,7 +244,7 @@ for itt = 1:iterations
     tic
     for aper = randperm(nApert) 
         current_dp = diffpats(:,:,aper);
-        if rand > 0.9 && itt >= refine_aperture_after && itt <= refine_aperture_until
+        if rand > probe_repl_freq && itt >= refine_aperture_after && itt <= refine_aperture_until
             probe_refinement_flag = 1;
         else
             probe_refinement_flag = 0;
