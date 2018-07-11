@@ -205,8 +205,9 @@ for mm = 1:length(lambda)
         pad_post(mm) = 0;
     end
 end
-cutoff = floor(iterations/2);
-prb_rplmnt_weight = min((cutoff^4/10)./(1:iterations).^4,0.1);
+% cutoff = floor(iterations/2);
+% prb_rplmnt_weight = min((cutoff^4/10)./(1:iterations).^4,0.1);
+prb_rplmnt_weight = 0.1 .* ones(iterations,1);
 %% pre allocation of propagators
 for mm = 1:length(lambda)
     k = 2*pi/lambda(mm);
@@ -243,13 +244,20 @@ disp('========beginning reconstruction=======');
 for itt = 1:iterations
     itt
     tic
+    
+    if mod(itt,5) == 0 && itt >= refine_aperture_after && itt <= refine_aperture_until
+        probe_refinement_flag = 1;
+    else
+        probe_refinement_flag = 0;
+    end
+    
     for aper = randperm(nApert) 
         current_dp = diffpats(:,:,aper);
-        if rand > probe_repl_freq && itt >= refine_aperture_after && itt <= refine_aperture_until
-            probe_refinement_flag = 1;
-        else
-            probe_refinement_flag = 0;
-        end
+%         if rand > probe_repl_freq && itt >= refine_aperture_after && itt <= refine_aperture_until
+%             probe_refinement_flag = 1;
+%         else
+%             probe_refinement_flag = 0;
+%         end
         for m = 1:length(lambda)
             rspace = big_obj{m}(cropR(aper,:,m), cropC(aper,:,m));
             buffer_rspace{m} = rspace;
