@@ -94,7 +94,7 @@ end
 if isfield(ePIE_inputs, 'probe_repl_freq')
     probe_repl_freq = ePIE_inputs(1).probe_repl_freq;
 else
-    probe_repl_freq = 0.9; %10% replacement frequency
+    probe_repl_freq = 10; %10% replacement frequency
 end
 if isfield(ePIE_inputs, 'miscNotes')
     miscNotes = ePIE_inputs.miscNotes;
@@ -191,7 +191,8 @@ for m = 1:length(lambda)
 end
 fourier_error = zeros(iterations,nApert);
 %% probe replacement parameters
-scaling_ratio = pixel_size ./ pixel_size(central_mode); 
+% scaling_ratio = pixel_size ./ pixel_size(central_mode); 
+scaling_ratio = max(pixel_size(central_mode)./pixel_size, pixel_size ./ pixel_size(central_mode));
 for mm = 1:length(lambda)
     scoop_size = round(little_area/scaling_ratio(mm));
     scoop_center = round((scoop_size+1)/2);
@@ -246,7 +247,7 @@ for itt = 1:iterations
     itt
     tic
     
-    if mod(itt,5) == 0 && itt >= refine_aperture_after && itt <= refine_aperture_until
+    if mod(itt,probe_repl_freq) == 0 && itt >= refine_aperture_after && itt <= refine_aperture_until
         probe_refinement_flag = 1;
     else
         probe_refinement_flag = 0;
