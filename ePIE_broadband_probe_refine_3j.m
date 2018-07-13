@@ -219,7 +219,7 @@ for mm = 1:length(lambda)
     v = ((1:little_area)-little_area/2)'*ones(1,little_area)*dfy;
     if mm ~= central_mode
         H_fwd{mm} = ifftshift(exp(1i*k*fresnel_dist).*exp(-1i*pi*lambda(mm)*fresnel_dist*(u.^2+v.^2)));
-        H_bk{mm} = (exp(1i*k*-fresnel_dist).*exp(-1i*pi*lambda(mm)*-fresnel_dist*(u.^2+v.^2));
+        H_bk{mm} = exp(1i*k*-fresnel_dist).*exp(-1i*pi*lambda(mm)*-fresnel_dist*(u.^2+v.^2));
     else
         %H_fwd{mm} =exp(1i*k*fresnel_dist).*exp(-1i*pi*lambda(mm)*fresnel_dist*(u.^2+v.^2));
         H_bk{mm} = exp(1i*k*-fresnel_dist).*exp(-1i*pi*lambda(mm)*-fresnel_dist*(u.^2+v.^2));
@@ -315,7 +315,7 @@ for itt = 1:iterations
                         Fprobe = my_fft(aperture{m}) .* H_bk{m};
                         Fprobe(scoop_vec{m},scoop_vec{m}) = my_fft(central_probe);
                         probe_rpl = my_ifft(Fprobe);
-                        probe_rpl = ifftn((fftn(probe_rpl).*H_fwd{m}));
+                        probe_rpl = ifftn(fftn(probe_rpl).*H_fwd{m});
                     elseif scoop_range(m) < little_area %lower energy than central mode
                         Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
                         Fcentral_probe_cropped = Fcentral_probe(scoop_vec{m}, scoop_vec{m});
