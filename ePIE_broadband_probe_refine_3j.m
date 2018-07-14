@@ -309,14 +309,14 @@ for itt = 1:iterations
                 update_factor_pr = beta_ap ./ object_max{m}.^2;
                 if probe_refinement_flag == 1
                     ap_updated = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
-                    if scoop_range(m) > little_area %higher energy than central mode
+                    if pixel_size(central_mode) > pixel_size(m) %higher energy than central mode
                         central_probe = ifftn(fftn(aperture{central_mode}).*H_bk_shifted);
                         central_probe = central_probe(scoop_vec{m},scoop_vec{m});
                         Fprobe = my_fft(aperture{m}) .* H_bk{m};
                         Fprobe(scoop_vec{m},scoop_vec{m}) = my_fft(central_probe);
                         probe_rpl = my_ifft(Fprobe);
                         probe_rpl = ifftn(fftn(probe_rpl).*H_fwd{m});
-                    elseif scoop_range(m) < little_area %lower energy than central mode
+                    elseif pixel_size(central_mode) < pixel_size(m) %lower energy than central mode
                         Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
                         Fcentral_probe_cropped = Fcentral_probe(scoop_vec{m}, scoop_vec{m});
                         probe_rpl = zeros(little_area,cdp); %match class of other arrays
