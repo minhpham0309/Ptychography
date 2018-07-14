@@ -306,8 +306,6 @@ for itt = 1:iterations
 %% Update the probe
         
             if itt > update_aperture_after && updateAp == 1
-%                 central_probe = fresnel_advance(aperture{central_mode},pixel_size(central_mode)...
-%                     ,pixel_size(central_mode),-fresnel_dist,lambda(central_mode));
                 update_factor_pr = beta_ap ./ object_max{m}.^2;
                 if probe_refinement_flag == 1
                     ap_updated = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
@@ -342,7 +340,6 @@ for itt = 1:iterations
         end
         fourier_error(itt,aper) = sum(abs(sqrt(complex(current_dp(goodInds)))...
             - sqrt(complex(collected_mag(goodInds)))))./sum(sqrt(complex(current_dp(goodInds))));
-        probe_refinement_flag = 0; %reset    
     end
   
 %% averaging between wavelengths
