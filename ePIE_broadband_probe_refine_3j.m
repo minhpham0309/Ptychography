@@ -249,6 +249,7 @@ for itt = 1:iterations
     
     if mod(itt,probe_repl_freq) == 0 && itt >= refine_aperture_after && itt <= refine_aperture_until
         probe_refinement_flag = 1;
+        fprintf('probe replacement on\n');
     else
         probe_refinement_flag = 0;
     end
