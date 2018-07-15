@@ -17,6 +17,7 @@ diffpats = ePIE_inputs(1).Patterns;
 positions = ePIE_inputs(1).Positions;
 filename = ePIE_inputs(1).FileName;
 pixel_size = ePIE_inputs(1).PixelSize;
+pixel_size_fresnel = ePIE_inputs(1).pixel_size_fresnel;
 big_obj = ePIE_inputs(1).InitialObj;
 aperture_radius = ePIE_inputs(1).ApRadius;
 aperture = ePIE_inputs(1).InitialAp;
@@ -212,8 +213,8 @@ prb_rplmnt_weight = 0.1 .* ones(iterations,1);
 %% pre allocation of propagators
 for mm = 1:length(lambda)
     k = 2*pi/lambda(mm);
-    Lx = pixel_size(mm)*little_area;
-    Ly = pixel_size(mm)*little_area;
+    Lx = pixel_size_fresnel(mm)*little_area;
+    Ly = pixel_size_fresnel(mm)*little_area;
     dfx = 1./Lx;
     dfy = 1./Ly;
     u = ones(little_area,1)*((1:little_area)-little_area/2)*dfx;
@@ -244,7 +245,6 @@ cdp = class(diffpats);
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
 for itt = 1:iterations
-    itt
     tic
     
     if mod(itt,probe_repl_freq) == 0 && itt >= refine_aperture_after && itt <= refine_aperture_until
@@ -446,29 +446,29 @@ end
     end
 
 %% Fresnel propogation
-    function U = fresnel_advance (U0, dx, dy, z, lambda)
-        % The function receives a field U0 at wavelength lambda
-        % and returns the field U after distance z, using the Fresnel
-        % approximation. dx, dy, are spatial resolution.
-        
-        k=2*pi/lambda;
-        [ny, nx] = size(U0);
-        
-        Lx = dx * nx;
-        Ly = dy * ny;
-        
-        dfx = 1./Lx;
-        dfy = 1./Ly;
-        
-        u = ones(nx,1)*((1:nx)-nx/2)*dfx;
-        v = ((1:ny)-ny/2)'*ones(1,ny)*dfy;
-        
-        O = my_fft(U0);
-        
-        H = exp(1i*k*z).*exp(-1i*pi*lambda*z*(u.^2+v.^2));
-        
-        U = my_ifft(O.*H);
-    end
+%     function U = fresnel_advance (U0, dx, dy, z, lambda)
+%         % The function receives a field U0 at wavelength lambda
+%         % and returns the field U after distance z, using the Fresnel
+%         % approximation. dx, dy, are spatial resolution.
+%         
+%         k=2*pi/lambda;
+%         [ny, nx] = size(U0);
+%         
+%         Lx = dx * nx;
+%         Ly = dy * ny;
+%         
+%         dfx = 1./Lx;
+%         dfy = 1./Ly;
+%         
+%         u = ones(nx,1)*((1:nx)-nx/2)*dfx;
+%         v = ((1:ny)-ny/2)'*ones(1,ny)*dfy;
+%         
+%         O = my_fft(U0);
+%         
+%         H = exp(1i*k*z).*exp(-1i*pi*lambda*z*(u.^2+v.^2));
+%         
+%         U = my_ifft(O.*H);
+%     end
 
 %% Make a circle of defined radius
 
