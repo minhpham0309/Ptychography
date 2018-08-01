@@ -242,6 +242,7 @@ if gpu == 1
     sub_obj = cellfun(@gpuArray, sub_obj, 'UniformOutput', false);
     aperture = cellfun(@gpuArray, aperture, 'UniformOutput', false);
     sub_ap = cellfun(@gpuArray, sub_ap, 'UniformOutput', false);
+    S = gpuArray(S);
 else
     display('========ePIE probe refine(method 3j) reconstructing with CPU========')
 end
