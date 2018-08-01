@@ -1,5 +1,5 @@
 %% Streamlined ePIE code for reconstructing from experimental diffraction patterns
-function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = ePIE_broadband(ePIE_inputs,varargin)
+function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = ePIE_broadband_probe(ePIE_inputs,varargin)
 %varargin = {beta_ap, beta_obj, modeSuppression}
 optional_args = {1 1 0 0 0}; %default values for optional parameters
 nva = length(varargin);
@@ -17,6 +17,7 @@ diffpats = ePIE_inputs(1).Patterns;
 positions = ePIE_inputs(1).Positions;
 filename = ePIE_inputs(1).FileName;
 pixel_size = ePIE_inputs(1).PixelSize;
+pixel_size_fresnel = ePIE_inputs(1).pixel_size_fresnel;
 big_obj = ePIE_inputs(1).InitialObj;
 aperture_radius = ePIE_inputs(1).ApRadius;
 aperture = ePIE_inputs(1).InitialAp;
@@ -26,7 +27,9 @@ S = ePIE_inputs(1).S;
 [~,job_ID] = system('echo $JOB_ID');
 job_ID = job_ID(~isspace(job_ID));
 nModes = length(pixel_size);
-filename = strcat('reconstruction_',filename,'_',job_ID);
+central_mode = ePIE_inputs.central_mode; %best mode for probe replacement
+fresnel_dist = ePIE_inputs.fresnel_dist; %probe to sample
+filename = strcat('reconstruction_probe_',filename,'_',job_ID);
 filename = strrep(filename,'__','_');
 %% parameter inputs
 if isfield(ePIE_inputs, 'saveOutput')
@@ -101,8 +104,8 @@ fprintf('averaging objects = %d\n',averagingConstraint);
 fprintf('complex probe guess = %d\n',apComplexGuess);
 fprintf('probe mask flag = %d\n',probeMaskFlag);
 fprintf('probe normalization = %d\n',probe_norm);
+fprintf('semi-implicit update on object = %d\n',implicit);
 fprintf('strong positivity = %d\n',strongPosi);
-fprintf('implicit = %d\n',implicit);
 fprintf('realness enforced = %d\n',realness);
 fprintf('updating probe = %d\n',updateAp);
 fprintf('enforcing positivity = %d\n',do_posi);
@@ -117,13 +120,12 @@ end
 goodInds = diffpats(:,:,1) ~= -1; %assume missing center homogenous
 [N1,N2,nApert] = size(diffpats); % Size of diffraction patterns
 best_err = 100; % check to make sure saving reconstruction with best error
-little_area = N1; % ROI of reconstruction to place back into big obj
-little_cent = floor(little_area/2) + 1;
+little_cent = floor(N1/2) + 1;
 cropVec = (1:N1) - little_cent;
 mcm = @makeCircleMask;
 for m = 1:length(lambda)
     %% Get centre positions for cropping (should be a 2 by n vector)
-    [pixelPositions, bigx, bigy] = convert_to_pixel_positions_testing5(positions,pixel_size(m),little_area);
+    [pixelPositions, bigx, bigy] = convert_to_pixel_positions_testing5(positions,pixel_size(m),N1);
     centrey = round(pixelPositions(:,2));
     centrex = round(pixelPositions(:,1));
     centBig = round((bigx+1)/2);
@@ -134,10 +136,10 @@ for m = 1:length(lambda)
     %% create initial aperture?and object guesses
     if aperture{m} == 0
         if apComplexGuess == 1
-            aperture{m} = single(((feval(mcm,(ceil(aperture_radius./pixel_size(m))),little_area).*...
-                rand(little_area,little_area) .* exp(1i*rand(little_area,little_area)))));
+            aperture{m} = single(((feval(mcm,(ceil(aperture_radius./pixel_size(m))),N1).*...
+                rand(N1,N1) .* exp(1i*rand(N1,N1)))));
         else
-            aperture{m} = single(feval(mcm,(ceil(aperture_radius./pixel_size(m))),little_area));
+            aperture{m} = single(feval(mcm,(ceil(aperture_radius./pixel_size(m))),N1));
         end
         
         initial_aperture{m} = aperture{m};
@@ -150,7 +152,7 @@ for m = 1:length(lambda)
     if probeMaskFlag == 1
         %         display('applying loose support')
         %     probeMask{m} = double(aperture{m} > 0);
-        probeMask{m} = double(feval(mcm,(ceil(aperture_radius./pixel_size(m))),little_area));
+        probeMask{m} = double(feval(mcm,(ceil(aperture_radius./pixel_size(m))),N1));
     else
         probeMask{m} = [];
     end
@@ -194,9 +196,43 @@ u_old = cell(nMode,1);
 Pu = cell(nMode,1);
 z = cell(nMode,1);
 best_obj = cell(nMode,1);
-sum_dp = zeros(nMode,1);
 collected_mag = zeros(N1,N2,cdp);
 
+%% probe replacement parameters
+scaling_ratio = pixel_size_fresnel ./ pixel_size_fresnel(central_mode);
+for mm = 1:length(lambda)
+    scoop_size = round(N1/scaling_ratio(mm));
+    scoop_center = round((scoop_size+1)/2);
+    scoop_vec{mm} = (1:scoop_size) - scoop_center + little_cent;
+    scoop_range(mm) = range(scoop_vec{mm})+1;
+    if scoop_range(mm) > N1
+        pad_pre(mm) = ceil((scoop_range(mm)-N1)/2);
+        pad_post(mm) = floor((scoop_range(mm)-N1)/2);
+    else
+        pad_pre(mm) = 0;
+        pad_post(mm) = 0;
+    end
+end
+cutoff = floor(iterations/2);
+prb_rplmnt_weight = min((cutoff^4/10)./(1:iterations).^4,0.1);
+%% pre allocation of propagators
+for mm = 1:length(lambda)
+    k = 2*pi/lambda(mm);
+    Lx = pixel_size_fresnel(mm)*N1;
+    Ly = pixel_size_fresnel(mm)*N1;
+    dfx = 1./Lx;
+    dfy = 1./Ly;
+    u = ones(N1,1)*((1:N1)-N1/2)*dfx;
+    v = ((1:N1)-N1/2)'*ones(1,N1)*dfy;
+    if mm ~= central_mode
+        H_fwd{mm} = ifftshift(exp(1i*k*fresnel_dist).*exp(-1i*pi*lambda(mm)*fresnel_dist*(u.^2+v.^2)));
+        %H_bk{mm} = ifftshift(exp(1i*k*-fresnel_dist).*exp(-1i*pi*lambda(mm)*-fresnel_dist*(u.^2+v.^2)));
+    else
+        %H_fwd{mm} =exp(1i*k*fresnel_dist).*exp(-1i*pi*lambda(mm)*fresnel_dist*(u.^2+v.^2));
+        H_bk{mm} = exp(1i*k*-fresnel_dist).*exp(-1i*pi*lambda(mm)*-fresnel_dist*(u.^2+v.^2));
+    end
+end
+probe_rpl = zeros(N1,cdp);
 %% GPU
 if gpu == 1
     display('========ePIE reconstructing with GPU========')
@@ -205,8 +241,8 @@ if gpu == 1
     big_obj = cellfun(@gpuArray, big_obj, 'UniformOutput', false);
     aperture = cellfun(@gpuArray, aperture, 'UniformOutput', false);
     S = gpuArray(S);
-    %sum_dp = gpuArray(sum_dp);
     collected_mag = gpuArray(collected_mag);
+    probe_rpl = gpuArray(probe_rpl);
 else
     display('========ePIE reconstructing with CPU========')
 end
@@ -236,7 +272,7 @@ for itt = 1:iterations
         % update object & probe
         for m = 1:length(lambda)
             %z_new = z{m}; z_new(goodInds) = scale(goodInds).*z{m}(goodInds);
-            z_new = scale.*z{m};
+            z_new = (0.1+0.9*scale).*z{m};
             %z_new = 2*z_new - z{m};
             
             Pu_new = ifft2(z_new);
@@ -244,12 +280,12 @@ for itt = 1:iterations
             
             abs_ap = abs(aperture{m});
             probe_max = max(abs_ap(:));
-            dt = beta_obj./probe_max.^2;
+            dt = beta_obj./probe_max.^2;       
             if implicit
                 u_new = ( ((1-beta_obj)).*u_old{m} + dt.*Pu_new.*conj(aperture{m})) ./ ( (1-beta_obj) + dt.*abs_ap.^2 );
             else
                 u_new = u_old{m} + dt*conj(aperture{m}).*diff;
-            end                        
+            end
             
             if realness == 1,  u_new = real(u_new); end
             if strongPosi == 1, u_new(u_new < 0) = 0; end
@@ -265,8 +301,37 @@ for itt = 1:iterations
             if itt > update_aperture_itt && updateAp == 1
                 if modeSuppression == 0 || mod(m,3) ~= 0
                     object_max = max(abs(u_new(:)));
-                    ds =beta_ap/object_max^2;
-                    aperture{m} = aperture{m} + ds*conj(u_new).*(diff);                    
+                    ds =beta_ap/object_max^2 ;%* sqrt((iterations-itt)/iterations);
+                    aperture{m} = aperture{m} + ds*conj(u_old{m}).*(diff);
+                    %aperture{m} = ((1-beta_ap).*aperture{m} + ds.*Pu_new.*conj(u_new)) ./ ( (1-beta_ap) + ds.*abs(u_new).^2 );
+                    
+                    if rand<0.1
+                        ap_updated = aperture{m};
+                        if scoop_range(m) > N1 %higher energy than central mode
+                            Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
+                            Fprobe_replaced = padarray(Fcentral_probe,  [pad_pre(m) pad_pre(m)],'pre');
+                            Fprobe_replaced = padarray(Fprobe_replaced, [pad_post(m) pad_post(m)],'post');
+                            probe_rpl = my_ifft(Fprobe_replaced);
+                            probe_rpl = probe_rpl(pad_pre(m)+1:end-pad_post(m),pad_pre(m)+1:end-pad_post(m));
+                            %                     probe_rpl = my_ifft(my_fft(probe_rpl).*H_fwd{m});
+                            probe_rpl = ifftn((fftn(probe_rpl).*H_fwd{m}));
+                            %probe_rpl = ifftn(Fcentral_probe.*H_fwd{m});
+                        elseif scoop_range(m) < N1 %lower energy than central mode
+                            Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
+                            Fcentral_probe_cropped = Fcentral_probe(scoop_vec{m}, scoop_vec{m});
+                            %match class of other arrays
+                            probe_rpl(:)=0;
+                            probe_rpl(scoop_vec{m},scoop_vec{m}) = my_ifft(Fcentral_probe_cropped);
+                            %                     probe_rpl = my_ifft(my_fft(probe_rpl).*H_fwd{m});
+                            probe_rpl = ifftn(fftn(probe_rpl).*H_fwd{m});
+                            %probe_rpl = ifftn(Fcentral_probe.*H_fwd{m});
+                        else
+                            probe_rpl = ap_updated;
+                        end
+                        ap_updated = ap_updated + prb_rplmnt_weight(itt)*(probe_rpl-ap_updated);
+                        aperture{m} = norm(ap_updated,'fro')/norm(ap_updated,'fro')...
+                            .*ap_updated;
+                    end
                 end
                 if probeMaskFlag, aperture{m}=aperture{m}.*probeMask{m}; end
                 if probe_norm
@@ -279,11 +344,9 @@ for itt = 1:iterations
             
         end
     end
-  
-
     
     %% plot result
-    if mod(itt,10)==0
+    if mod(itt,5)==0
         for m=1:length(lambda)
             %if itt<10, FU = fftshift(fft2(big_obj{m})) .* Kfilter{m}; big_obj{m} = ifft2(ifftshift(FU)); end
             [dim1,~] = size(big_obj{m});
@@ -337,7 +400,7 @@ for itt = 1:iterations
             
         end
     end
-        
+    
     fourier_error(itt,isinf(fourier_error(itt,:))) = 0;
     mean_err = sum(fourier_error(itt,:),2)/nApert;
     
@@ -378,21 +441,21 @@ end
 
 %% Function for converting positions from experimental geometry to pixel geometry
 
-    function [positions, bigx, bigy] = convert_to_pixel_positions(positions,pixel_size,little_area)
+    function [positions, bigx, bigy] = convert_to_pixel_positions(positions,pixel_size,N1)
         positions = positions./pixel_size;
         positions(:,1) = (positions(:,1)-min(positions(:,1)));
         positions(:,2) = (positions(:,2)-min(positions(:,2)));
         positions(:,1) = (positions(:,1)-round(max(positions(:,1))/2));
         positions(:,2) = (positions(:,2)-round(max(positions(:,2))/2));
         positions = round(positions);
-        bigx =little_area + max(positions(:))*2+10; % Field of view for full object
-        bigy = little_area + max(positions(:))*2+10;
+        bigx =N1 + max(positions(:))*2+10; % Field of view for full object
+        bigy = N1 + max(positions(:))*2+10;
         big_cent = floor(bigx/2)+1;
         positions = positions+big_cent;
     end
 
     function [pixelPositions, bigx, bigy] = ...
-            convert_to_pixel_positions_testing5(positions,pixel_size,little_area)
+            convert_to_pixel_positions_testing5(positions,pixel_size,N1)
         
         pixelPositions = positions./pixel_size;
         pixelPositions(:,1) = (pixelPositions(:,1)-min(pixelPositions(:,1))); %x goes from 0 to max
@@ -400,8 +463,8 @@ end
         pixelPositions(:,1) = (pixelPositions(:,1) - round(max(pixelPositions(:,1))/2)); %x is centrosymmetric around 0
         pixelPositions(:,2) = (pixelPositions(:,2) - round(max(pixelPositions(:,2))/2)); %y is centrosymmetric around 0
         
-        bigx = little_area + round(max(pixelPositions(:)))*2+10; % Field of view for full object
-        bigy = little_area + round(max(pixelPositions(:)))*2+10;
+        bigx = N1 + round(max(pixelPositions(:)))*2+10; % Field of view for full object
+        bigy = N1 + round(max(pixelPositions(:)))*2+10;
         
         big_cent = floor(bigx/2)+1;
         
