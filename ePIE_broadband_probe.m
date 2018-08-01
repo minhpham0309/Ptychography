@@ -1,7 +1,7 @@
 %% Streamlined ePIE code for reconstructing from experimental diffraction patterns
 function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = ePIE_broadband_probe(ePIE_inputs,varargin)
 %varargin = {beta_ap, beta_obj, modeSuppression}
-optional_args = {1 1 0 0 0}; %default values for optional parameters
+optional_args = {0.7 1 1 0 0}; %default values for optional parameters
 nva = length(varargin);
 optional_args(1:nva) = varargin;
 [beta_obj,beta_ap, implicit,modeSuppression,probe_norm] = optional_args{:};
