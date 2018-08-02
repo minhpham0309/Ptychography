@@ -167,7 +167,7 @@ for m = 1:length(lambda)
         aperture{m} = single(aperture{m});
         initial_aperture{m} = aperture{m};
     end
-    sub_ap{m} = single(rand(little_area,little_area)).*exp(1i*(rand(little_area,little_area)));
+    sub_ap{m} = 1e-4 .* single(rand(little_area,little_area)).*exp(1i*(rand(little_area,little_area)));
     if probeMaskFlag == 1
 %         display('applying loose support')
     %     probeMask{m} = double(aperture{m} > 0);
