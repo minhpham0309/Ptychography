@@ -396,14 +396,18 @@ for itt = 1:iterations
         end
 
         if save_intermediate == 1 && mod(itt,floor(iterations/10)) == 0
-            inter_frame = inter_frame+1;
-            for m = 1:nModes
-                if gpu == 1
-                    inter_obj{m}(:,:,inter_frame) = gather(best_obj{m});
-                else
-                    inter_obj{m}(:,:,inter_frame) = best_obj{m};
-                end
-            end
+%             inter_frame = inter_frame+1;
+%             for m = 1:nModes
+%                 if gpu == 1
+%                     inter_obj{m}(:,:,inter_frame) = gather(best_obj{m});
+%                 else
+%                     inter_obj{m}(:,:,inter_frame) = best_obj{m};
+%                 end
+%             end
+            best_obj_g = cellfun(@gather, best_obj, 'UniformOutput', false);
+            aperture_g = cellfun(@gather, aperture, 'UniformOutput', false);
+            save([save_string filename '_itt' num2str(itt) '.mat'],...
+                'best_obj_g','aperture_g','-v7.3');
         end
 
     toc
