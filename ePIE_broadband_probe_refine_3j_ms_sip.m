@@ -293,10 +293,11 @@ for itt = 1:iterations
             diff_exit_wave = new_exit_wave - buffer_exit_wave{m};
             diff_exit_wave_sub = new_exit_wave_sub - buffer_exit_wave_sub{m};
             dt = beta_obj ./ probe_max{m}.^2;
+            dt_sub = beta_obj ./ probe_max_sub{m}.^2;
             new_rspace = ( ((1-beta_obj)) .* buffer_rspace{m} + dt.*new_exit_wave.*conj(aperture{m}) ) ./ ...
                 ( (1-beta_obj) + dt.*abs(aperture{m}).^2 ); 
-            new_rspace_sub = ( ((1-beta_obj)) .* buffer_rspace_sub{m} + dt.*new_exit_wave_sub.*conj(sub_ap{m}) ) ./ ...
-                ( (1-beta_obj) + dt.*abs(sub_ap{m}).^2 ); 
+            new_rspace_sub = ( ((1-beta_obj)) .* buffer_rspace_sub{m} + dt_sub.*new_exit_wave_sub.*conj(sub_ap{m}) ) ./ ...
+                ( (1-beta_obj) + dt_sub.*abs(sub_ap{m}).^2 ); 
             big_obj{m}(cropR(aper,:,m), cropC(aper,:,m)) = new_rspace;
             sub_obj{m}(cropR_sub(aper,:,m), cropC_sub(aper,:,m)) = new_rspace_sub;
 
