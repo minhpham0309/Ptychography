@@ -292,12 +292,14 @@ for itt = 1:iterations
             new_exit_wave_sub = ifft2(temp_dp_sub{m});
             diff_exit_wave = new_exit_wave - buffer_exit_wave{m};
             diff_exit_wave_sub = new_exit_wave_sub - buffer_exit_wave_sub{m};
-            dt = beta_obj ./ probe_max{m}.^2;
-            dt_sub = beta_obj ./ probe_max_sub{m}.^2;
-            new_rspace = ( ((1-beta_obj)) .* buffer_rspace{m} + dt.*new_exit_wave.*conj(aperture{m}) ) ./ ...
-                ( (1-beta_obj) + dt.*abs(aperture{m}).^2 ); 
-            new_rspace_sub = ( ((1-beta_obj)) .* buffer_rspace_sub{m} + dt_sub.*new_exit_wave_sub.*conj(sub_ap{m}) ) ./ ...
-                ( (1-beta_obj) + dt_sub.*abs(sub_ap{m}).^2 ); 
+%             dt = beta_obj ./ probe_max{m}.^2;
+%             dt_sub = beta_obj ./ probe_max_sub{m}.^2;
+            new_rspace = ( ( probe_max{m}.^2* (1-beta_obj)) .* buffer_rspace{m} + beta_obj .*new_exit_wave.*conj(aperture{m}) ) ./ ...
+                ( probe_max{m}.^2* (1-beta_obj) + beta_obj .*abs(aperture{m}).^2 );
+            new_rspace_sub = ( ( probe_max_sub{m}.^2* (1-beta_obj)) .* buffer_rspace_sub{m} + beta_obj .*new_exit_wave_sub.*conj(sub_ap{m}) ) ./ ...
+                ( probe_max_sub{m}.^2* (1-beta_obj) + beta_obj .*abs(sub_ap{m}).^2 );
+            new_rspace(isnan(new_rspace)) = 0;
+            new_rspace_sub(isnan(new_rspace_sub))=0;
             big_obj{m}(cropR(aper,:,m), cropC(aper,:,m)) = new_rspace;
             sub_obj{m}(cropR_sub(aper,:,m), cropC_sub(aper,:,m)) = new_rspace_sub;
 
@@ -333,9 +335,6 @@ for itt = 1:iterations
                 end
                 sub_ap{m} = sub_ap{m} + update_factor_pr_sub .* conj(buffer_rspace_sub{m}).*diff_exit_wave_sub;
             end 
-            aperture{m} = aperture{m} ./ norm(aperture{m}(:),Inf);
-            sub_ap{m} = sub_ap{m} ./ norm(sub_ap{m}(:),Inf);
- 
   %% update the weights
             S(m) = sum(abs(aperture{m}(:)).^2);  
         end
