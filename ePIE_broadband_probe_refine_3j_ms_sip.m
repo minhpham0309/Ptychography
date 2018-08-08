@@ -329,12 +329,12 @@ for itt = 1:iterations
                     aperture{m} = norm(ap_updated,'fro')/norm(ap_buffer,'fro')...
                         .*ap_buffer;
                 else
-                    aperture{m} = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*diff_exit_wave;
-                    aperture{m} = aperture{m} ./ norm(aperture{m}(:),Inf);
+                    aperture{m} = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*diff_exit_wave; 
                 end
                 sub_ap{m} = sub_ap{m} + update_factor_pr_sub .* conj(buffer_rspace_sub{m}).*diff_exit_wave_sub;
             end 
-
+            aperture{m} = aperture{m} ./ norm(aperture{m}(:),Inf);
+            sub_ap{m} = sub_ap{m} ./ norm(sub_ap{m}(:),Inf);
  
   %% update the weights
             S(m) = sum(abs(aperture{m}(:)).^2);  
