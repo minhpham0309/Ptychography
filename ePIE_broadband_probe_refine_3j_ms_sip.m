@@ -330,6 +330,7 @@ for itt = 1:iterations
                         .*ap_buffer;
                 else
                     aperture{m} = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*diff_exit_wave;
+                    aperture{m} = aperture{m} ./ norm(aperture{m}(:),Inf);
                 end
                 sub_ap{m} = sub_ap{m} + update_factor_pr_sub .* conj(buffer_rspace_sub{m}).*diff_exit_wave_sub;
             end 
