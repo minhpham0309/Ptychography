@@ -405,7 +405,7 @@ for itt = 1:iterations
 %                     inter_obj{m}(:,:,inter_frame) = best_obj{m};
 %                 end
 %             end
-            best_obj_g = cellfun(@gather, best_obj, 'UniformOutput', false);
+            big_obj_g = cellfun(@gather, big_obj, 'UniformOutput', false);
             aperture_g = cellfun(@gather, aperture, 'UniformOutput', false);
             save([save_string filename '_itt' num2str(itt) '.mat'],...
                 'best_obj_g','aperture_g','-v7.3');
