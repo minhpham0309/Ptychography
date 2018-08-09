@@ -406,9 +406,10 @@ for itt = 1:iterations
 %                 end
 %             end
             big_obj_g = cellfun(@gather, big_obj, 'UniformOutput', false);
+            best_obj_g = cellfun(@gather, best_obj, 'UniformOutput', false);
             aperture_g = cellfun(@gather, aperture, 'UniformOutput', false);
             save([save_string filename '_itt' num2str(itt) '.mat'],...
-                'best_obj_g','aperture_g','-v7.3');
+                'big_obj_g','best_obj_g','aperture_g','-v7.3');
         end
 
     toc
