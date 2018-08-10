@@ -1,10 +1,10 @@
 %% Streamlined ePIE code for reconstructing from experimental diffraction patterns
 function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = DR_broadband_probe(ePIE_inputs,varargin)
 %varargin = {beta_ap, beta_obj, modeSuppression}
-optional_args = {0.9,0.9, 0,1,1, 0.1, 0.1,0.4,6}; %default values for optional parameters
+optional_args = {0.8,0.5,0.7, 0,0}; %default values for optional parameters
 nva = length(varargin);
 optional_args(1:nva) = varargin;
-[beta_obj,beta_ap, modeSuppression,probe_norm,fixed_beta, alpha, w_init,w_final,order] = optional_args{:};
+[beta_obj,beta_ap,alpha, modeSuppression,probe_norm ] = optional_args{:};
 rng('shuffle','twister');
 %% setup working and save directories
 
@@ -102,7 +102,6 @@ fprintf('averaging objects = %d\n',averagingConstraint);
 fprintf('complex probe guess = %d\n',apComplexGuess);
 fprintf('probe mask flag = %d\n',probeMaskFlag);
 fprintf('support mask flag = %d\n',supportMaskFlag);
-fprintf('fix beta obj = %d\n',fixed_beta);
 fprintf('strong positivity = %d\n',strongPosi);
 fprintf('realness enforced = %d\n',realness);
 fprintf('updating probe = %d\n',updateAp);
@@ -160,7 +159,7 @@ for m = 1:length(lambda)
     end
     
     if big_obj{m} == 0
-        big_obj{m} = single(0.1*rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
+        big_obj{m} = single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
         %big_obj{m} = single(0.5*ones(bigx,bigy));
         initial_obj{m} = big_obj{m};
     else
@@ -199,7 +198,7 @@ Z =cell(nMode);
 for m=1:length(lambda)
     Z{m} = rand(N1,N2,nApert,'single');
 end
-ws = w_init + (w_final-w_init)* ((1:iterations)/iterations).^order;
+%ws = w_init + (w_final-w_init)* ((1:iterations)/iterations).^order;
 Alpha = alpha - (alpha-0.1)* ((1:iterations)/iterations).^2;
 %z = cell(nMode,1);
 cdp = class(diffpats);
@@ -265,8 +264,6 @@ end
 
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
-weights = [0.5 1 1 1 1 1 1 1 1 1 0.5 ] ;
-step_size = ones(nMode,1);
 
 for itt = 1:iterations
     tic
@@ -291,7 +288,6 @@ for itt = 1:iterations
             %z_F{m} = 2*fft2(Pu) - Z{m}(:,:,aper);
             %z_F{m} = z_u{m};
             collected_mag = collected_mag + abs(z_F{m}).^2;
-            if ~fixed_beta && itt==1, sum_dp(m)=sum_dp(m)+ sum(abs(z_F{m}(:)).^2); end
         end        
         collected_mag = sqrt(collected_mag);
         scale = (1-w).*current_dp./collected_mag + w;
@@ -314,9 +310,9 @@ for itt = 1:iterations
             abs_ap = abs(aperture{m});
             probe_max = max(abs_ap(:));
             dt = beta_obj/probe_max^2;
-            %u_new = ( ((1-beta_obj)/dt).*u_old{m} + Pu_new.*conj(aperture{m}))./ ...
-            %    ( (1-beta_obj)/dt +  abs_ap.^2);
-            u_new = u_old{m} + dt*conj(aperture{m}).*diff;
+            u_new = ( ((1-beta_obj)/dt).*u_old{m} + Pu_new.*conj(aperture{m}))./ ...
+                ( (1-beta_obj)/dt +  abs_ap.^2);
+            %u_new = u_old{m} + dt*conj(aperture{m}).*diff;
             
             if realness == 1,u_new = real(u_new); end
             if strongPosi == 1,u_new(u_new < 0) = 0;end            
@@ -330,7 +326,7 @@ for itt = 1:iterations
             %if itt==10, FU = fftshift(fft2(big_obj{m})).*Kfilter{m}; big_obj{m} = ifft2(ifftshift(FU)); end
             
             % Update the probe          
-            if itt > update_aperture_itt && updateAp == 1 && itt~=10
+            if itt > update_aperture_itt && updateAp == 1
                 if modeSuppression==0 || mod(m,3)~=0
                     abs_u = abs(u_new);
                     object_max = max(abs_u(:));
@@ -339,7 +335,7 @@ for itt = 1:iterations
                     %aperture{m} = ((1-beta_ap)*aperture{m} + ds*Pu_new.*conj(u_old{m})) ./ ( (1-beta_ap) + ds*abs(u_old{m}).^2 );
                     %aperture{m} = ((1-beta_ap).*aperture{m} + ds.*Pu_new.*conj(u_new)) ./ ( (1-beta_ap) + ds.*abs_u.^2 );
                     
-                    if rand<0.1 && itt<40
+                    if rand<0.1 
                         if scoop_range(m) > N1 %higher energy than central mode
                             Fcentral_probe = my_fft(aperture{central_mode}).*H_bk{central_mode};
                             Fprobe_replaced = padarray(Fcentral_probe,  [pad_pre(m) pad_pre(m)],'pre');
@@ -376,15 +372,7 @@ for itt = 1:iterations
             S(m) = sum(abs(aperture{m}(:)).^2);
         end
     end 
-    if ~fixed_beta && itt==1, step_size = sum_dp/max(sum_dp) 
-    end
-    %{
-    if itt==19
-        for m=1:nMode
-            big_obj{m} = big_obj{m}.*0.1;
-        end
-    end
-    %}
+
     %% show images
     if mod(itt,10)==0
     for m=1:nMode
