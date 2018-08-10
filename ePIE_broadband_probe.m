@@ -158,7 +158,7 @@ for m = 1:length(lambda)
     end
     
     if big_obj{m} == 0
-        big_obj{m} = single(0.1*rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
+        big_obj{m} = single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
         %big_obj{m} = rand(bigx,bigy,'single');
         initial_obj{m} = big_obj{m};
     else
@@ -185,7 +185,10 @@ for m = 1:length(lambda)
     [XX,YY] = meshgrid(1:bigx,1:bigy);
     X_cen = floor(bigx/2); Y_cen = floor(bigy/2);
     R2 = (XX-X_cen).^2 + (YY-Y_cen).^2;
-    Kfilter{m} = exp(-R2/(2*600)^2);Kfilter{m} = Kfilter{m}/max(Kfilter{m}(:));
+    N_filter=4;
+    for n=1:N_filter
+        Kfilter{m,n} = exp(-R2/(2*(400+n*200))^2);Kfilter{m,n} = Kfilter{m,n}/max(Kfilter{m,n}(:));
+    end
 end
 clear R2 XX YY;
 
@@ -197,6 +200,7 @@ Pu = cell(nMode,1);
 z = cell(nMode,1);
 best_obj = cell(nMode,1);
 collected_mag = zeros(N1,N2,cdp);
+probe_rpl = zeros(N1,cdp);
 
 %% probe replacement parameters
 scaling_ratio = pixel_size_fresnel ./ pixel_size_fresnel(central_mode);
@@ -232,7 +236,7 @@ for mm = 1:length(lambda)
         H_bk{mm} = exp(1i*k*-fresnel_dist).*exp(-1i*pi*lambda(mm)*-fresnel_dist*(u.^2+v.^2));
     end
 end
-probe_rpl = zeros(N1,cdp);
+rates=zeros(nModes,1);
 %% GPU
 if gpu == 1
     display('========ePIE reconstructing with GPU========')
@@ -243,14 +247,25 @@ if gpu == 1
     S = gpuArray(S);
     collected_mag = gpuArray(collected_mag);
     probe_rpl = gpuArray(probe_rpl);
+    rates = gpuArray(rates);
 else
     display('========ePIE reconstructing with CPU========')
 end
+
+bigx = zeros(nModes,1);
+for m=1:nModes
+    bigx(m) = size(big_obj{m},1);
+end
+Alpha = 0.1 + (0.2-0.1)* ((1:iterations)/iterations).^2;
+
 
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
 for itt = 1:iterations
     tic
+    alpha=0.1;
+    %alpha= Alpha(itt);
+
     for aper = randperm(nApert)
         current_dp = diffpats(:,:,aper);
         collected_mag(:)=0;
@@ -266,13 +281,14 @@ for itt = 1:iterations
         collected_mag = sqrt(collected_mag);
         %scale = current_dp./collected_mag ;
         scale = current_dp./collected_mag;
+        scale = alpha + (1-alpha)*scale;
         fourier_error(itt,aper) = sum(abs( current_dp(goodInds)- collected_mag(goodInds) )) ...
             ./sum(current_dp(goodInds));
         
         % update object & probe
         for m = 1:length(lambda)
             %z_new = z{m}; z_new(goodInds) = scale(goodInds).*z{m}(goodInds);
-            z_new = (0.1+0.9*scale).*z{m};
+            z_new = scale.*z{m};
             %z_new = 2*z_new - z{m};
             
             Pu_new = ifft2(z_new);
@@ -334,25 +350,31 @@ for itt = 1:iterations
                     end
                 end
                 if probeMaskFlag, aperture{m}=aperture{m}.*probeMask{m}; end
-                if probe_norm
-                    rate = max(abs(aperture{m}(:)));
-                    aperture{m} = aperture{m}/rate; %big_obj{m} = big_obj{m}*rate;
-                end
-            end
-            % update weight
-            %S(m) = sum(abs(aperture{m}(:)).^2);
-            
+
+            end      
         end
+        
+        if probe_norm && rand<0.1
+            for m=1:nModes
+                rates(m) = max(abs(aperture{m}(:)));
+            end
+            rate=max(rates);
+            for m=1:nModes
+                aperture{m} = aperture{m}/rate; %big_obj{m} = big_obj{m}*rate;
+            end
+        end
+        
     end
+    %n = ceil(itt/20);if n<=N_filter, for m=1:nModes, FU = fftshift(fft2(big_obj{m})) .* Kfilter{m,n}; big_obj{m} = ifft2(ifftshift(FU)); end;end
     
     %% plot result
     if mod(itt,5)==0
         for m=1:length(lambda)
             %if itt<10, FU = fftshift(fft2(big_obj{m})) .* Kfilter{m}; big_obj{m} = ifft2(ifftshift(FU)); end
             [dim1,~] = size(big_obj{m});
-            r = floor(dim1/2)+ (-220:220); c = floor(N1/2)+ (-100:100);
+            r = floor(dim1/2)+ (-130:130); c = floor(N1/2)+ (-100:100);
             figure(m);
-            subplot(1,2,1);imagesc(abs(big_obj{m})); axis image; colormap jet; colorbar
+            subplot(1,2,1);imagesc(abs(big_obj{m}(r,r))); axis image; colormap jet; colorbar
             subplot(1,2,2);imagesc(abs(aperture{m}(c,c))); axis image; colormap jet; colorbar
             drawnow;
         end
@@ -424,6 +446,9 @@ for itt = 1:iterations
 end
 disp('======reconstruction finished=======')
 
+for m=1:nModes
+    S(m) = sum(abs(aperture{m}(:)).^2);
+end
 
 if gpu == 1
     fourier_error = gather(fourier_error);
