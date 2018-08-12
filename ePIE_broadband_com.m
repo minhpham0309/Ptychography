@@ -258,8 +258,8 @@ for itt = 1:iterations
     [~,r_shift,c_shift] = comAlign2D(abs(aperture{best_mode}));
     for m = 1:length(lambda)
         scale_factor = pixel_size(best_mode) / pixel_size(m);
-        r_shift_scaled = r_shift * scale_factor;
-        c_shift_scaled = c_shift * scale_factor;
+        r_shift_scaled = round(r_shift * scale_factor);
+        c_shift_scaled = round(c_shift * scale_factor);
         aperture{m} = circshift(aperture{m}, [r_shift_scaled, c_shift_scaled]);
     end
 %% compute error
