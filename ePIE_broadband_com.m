@@ -104,6 +104,7 @@ fprintf('realness enforced = %d\n',realness);
 fprintf('updating probe = %d\n',updateAp);
 fprintf('enforcing positivity = %d\n',do_posi);
 fprintf('updating probe after iteration %d\n',update_aperture_after);
+fprintf('best mode = %d\n',best_mode);
 fprintf('mode suppression = %d\n',modeSuppression);
 fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
@@ -255,13 +256,13 @@ for itt = 1:iterations
             S(m) = sum(abs(aperture{m}(:)).^2);  
         end
 %% com align the probes corresponding to best mode
-    [~,r_shift,c_shift] = comAlign2D(abs(aperture{best_mode}));
-    for m = 1:length(lambda)
-        scale_factor = pixel_size(best_mode) / pixel_size(m);
-        r_shift_scaled = round(r_shift * scale_factor);
-        c_shift_scaled = round(c_shift * scale_factor);
-        aperture{m} = circshift(aperture{m}, [r_shift_scaled, c_shift_scaled]);
-    end
+        [~,r_shift,c_shift] = comAlign2D(abs(aperture{best_mode}));
+        for m = 1:length(lambda)
+            scale_factor = pixel_size(best_mode) / pixel_size(m);
+            r_shift_scaled = round(r_shift * scale_factor);
+            c_shift_scaled = round(c_shift * scale_factor);
+            aperture{m} = circshift(aperture{m}, [r_shift_scaled, c_shift_scaled]);
+        end
 %% compute error
             fourier_error(itt,aper) = sum(abs(sqrt(complex(current_dp(goodInds)))...
                 - sqrt(complex(collected_mag(goodInds)))))./sum(sqrt(complex(current_dp(goodInds))));
