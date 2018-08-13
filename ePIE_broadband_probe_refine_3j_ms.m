@@ -40,7 +40,7 @@ end
 if isfield(ePIE_inputs, 'save_intermediate');
     save_intermediate = ePIE_inputs.save_intermediate;
 else
-    save_intermediate = 0;
+    save_intermediate = 1;
 end
 if isfield(ePIE_inputs, 'GpuFlag')
     gpu = ePIE_inputs(1).GpuFlag;
@@ -126,6 +126,7 @@ fprintf('refining probe until iteration %d\n',refine_aperture_until);
 fprintf('mode suppression = %d\n',modeSuppression);
 fprintf('fresnel distance = %f\n',fresnel_dist);
 fprintf('central mode = %d\n',central_mode);
+fprintf('save intermediate = %d\n', save_intermediate);
 fprintf('probe replacement frequency = %f\n',probe_repl_freq);
 fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
@@ -395,14 +396,10 @@ for itt = 1:iterations
         end
 
         if save_intermediate == 1 && mod(itt,floor(iterations/10)) == 0
-            inter_frame = inter_frame+1;
-            for m = 1:nModes
-                if gpu == 1
-                    inter_obj{m}(:,:,inter_frame) = gather(best_obj{m});
-                else
-                    inter_obj{m}(:,:,inter_frame) = best_obj{m};
-                end
-            end
+            big_obj_g = cellfun(@gather, big_obj, 'UniformOutput', false);
+            aperture_g = cellfun(@gather, aperture, 'UniformOutput', false);
+            save([save_string filename '_itt' num2str(itt) '.mat'],...
+                'big_obj_g','aperture_g','-v7.3');
         end
 
     toc
