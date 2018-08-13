@@ -38,7 +38,7 @@ end
 if isfield(ePIE_inputs, 'save_intermediate');
     save_intermediate = ePIE_inputs.save_intermediate;
 else
-    save_intermediate = 0;
+    save_intermediate = 1;
 end
 if isfield(ePIE_inputs, 'GpuFlag')
     gpu = ePIE_inputs(1).GpuFlag;
@@ -323,15 +323,12 @@ for itt = 1:iterations
             best_err = mean_err;
         end
 
-        if save_intermediate == 1 && mod(itt,floor(iterations/10)) == 0
-            inter_frame = inter_frame+1;
-            for m = 1:nModes
-                if gpu == 1
-                    inter_obj{m}(:,:,inter_frame) = gather(best_obj{m});
-                else
-                    inter_obj{m}(:,:,inter_frame) = best_obj{m};
-                end
-            end
+        if save_intermediate == 1 %&& mod(itt,floor(iterations/10)) == 0
+            big_obj_g = cellfun(@gather, big_obj, 'UniformOutput', false);
+%             best_obj_g = cellfun(@gather, best_obj, 'UniformOutput', false);
+            aperture_g = cellfun(@gather, aperture, 'UniformOutput', false);
+            save([save_string filename '_itt' num2str(itt) '.mat'],...
+                'big_obj_g','aperture_g','-v7.3');
         end
 
     toc
