@@ -150,8 +150,8 @@ for m = 1:length(lambda)
     for aper = 1:nApert
         cropR(aper,:,m) = cropVec+centrey(aper);
         cropC(aper,:,m) = cropVec+centrex(aper);
-        cropR_sub(aper,:,m) = round(rand(size(cropVec)) .* cropR(aper,:,m));
-        cropC_sub(aper,:,m) = round(rand(size(cropVec)) .* cropC(aper,:,m));
+        cropR_sub(aper,:,m) = ceil(rand(size(cropVec)) .* cropR(aper,:,m));
+        cropC_sub(aper,:,m) = ceil(rand(size(cropVec)) .* cropC(aper,:,m));
     end
 %% create initial aperture?and object guesses
     if aperture{m} == 0
