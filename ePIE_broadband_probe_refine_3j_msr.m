@@ -150,9 +150,10 @@ for m = 1:length(lambda)
     for aper = 1:nApert
         cropR(aper,:,m) = cropVec+centrey(aper);
         cropC(aper,:,m) = cropVec+centrex(aper);
-        cropR_sub(aper,:,m) = ceil(rand(size(cropVec)) .* cropR(aper,:,m));
-        cropC_sub(aper,:,m) = ceil(rand(size(cropVec)) .* cropC(aper,:,m));
     end
+    qqq = randperm(nApert);
+    cropR_sub(qqq,:,m) = cropR(1:nApert,:,m);
+    cropC_sub(qqq,:,m) = cropC(1:nApert,:,m);
 %% create initial aperture?and object guesses
     if aperture{m} == 0
         if apComplexGuess == 1
