@@ -29,7 +29,7 @@ job_ID = job_ID(~isspace(job_ID));
 nModes = length(pixel_size);
 central_mode = ePIE_inputs.central_mode; %best mode for probe replacement
 fresnel_dist = ePIE_inputs.fresnel_dist; %probe to sample
-filename = strcat('reconstruction_probe_replace_3j_msr',filename,'_',job_ID);
+filename = strcat('reconstruction_probe_replace_3j_msr_',filename,'_',job_ID);
 filename = strrep(filename,'__','_');
 %% parameter inputs
 if isfield(ePIE_inputs, 'saveOutput')
@@ -137,6 +137,7 @@ end
 goodInds = find(diffpats(:,:,1) ~= -1); %assume missing center homogenous
 [little_area,~] = size(diffpats(:,:,1)); % Size of diffraction patterns
 nApert = size(diffpats,3);
+n_ap_shuffle = randperm(nApert);
 best_err = 100; % check to make sure saving reconstruction with best error
 little_cent = floor(little_area/2) + 1;
 cropVec = (1:little_area) - little_cent;
@@ -148,12 +149,11 @@ for m = 1:length(lambda)
     centrex = round(pixelPositions(:,1));
     centBig = round((bigx+1)/2);
     for aper = 1:nApert
-        cropR(aper,:,m) = cropVec+centBig+(centrey(aper)-centBig);
-        cropC(aper,:,m) = cropVec+centBig+(centrex(aper)-centBig);
+        cropR(aper,:,m) = cropVec + centrey(aper);
+        cropC(aper,:,m) = cropVec + centrex(aper);
+        cropR_sub(n_ap_shuffle(aper),:,m) = cropR(aper,:,m);
+        cropC_sub(n_ap_shuffle(aper),:,m) = cropC(aper,:,m);
     end
-    qqq = randperm(nApert);
-    cropR_sub(qqq,:,m) = cropR(1:nApert,:,m);
-    cropC_sub(qqq,:,m) = cropC(1:nApert,:,m);
 %% create initial aperture?and object guesses
     if aperture{m} == 0
         if apComplexGuess == 1
