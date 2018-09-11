@@ -406,8 +406,10 @@ for itt = 1:iterations
         if save_intermediate == 1 && mod(itt,floor(iterations/10)) == 0
             big_obj_g = cellfun(@gather, big_obj, 'UniformOutput', false);
             aperture_g = cellfun(@gather, aperture, 'UniformOutput', false);
+            sub_obj_g = cellfun(@gather, sub_obj, 'UniformOutput', false);
+            sub_ap_g = cellfun(@gather, sub_ap, 'UniformOutput', false);
             save([save_string filename '_itt' num2str(itt) '.mat'],...
-                'big_obj_g','aperture_g','-v7.3');
+                'big_obj_g','aperture_g','sub_obj_g','sup_ap_g','-v7.3');
         end
 
     toc
@@ -421,6 +423,8 @@ fourier_error = gather(fourier_error);
 best_obj = cellfun(@gather, best_obj, 'UniformOutput', false);
 aperture = cellfun(@gather, aperture, 'UniformOutput', false);
 big_obj = cellfun(@gather, big_obj, 'UniformOutput', false);
+sub_obj = cellfun(@gather, sub_obj, 'UniformOutput', false);
+sub_ap = cellfun(@gather, sub_ap, 'UniformOutput', false);
 initial_aperture = cellfun(@gather, initial_aperture, 'UniformOutput', false);
 % S = cellfun(@gather, S, 'UniformOutput', false);
 S = gather(S);
@@ -428,7 +432,7 @@ end
 
 if saveOutput == 1
     save([save_string filename '.mat'],...
-        'best_obj','aperture','big_obj','initial_aperture','fourier_error','S','inter_obj','-v7.3');
+        'best_obj','aperture','big_obj','sub_obj','sub_ap','initial_aperture','fourier_error','S','inter_obj','-v7.3');
 end
 
 %% Function for converting positions from experimental geometry to pixel geometry
