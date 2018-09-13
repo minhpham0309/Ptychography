@@ -409,7 +409,7 @@ for itt = 1:iterations
             sub_obj_g = cellfun(@gather, sub_obj, 'UniformOutput', false);
             sub_ap_g = cellfun(@gather, sub_ap, 'UniformOutput', false);
             save([save_string filename '_itt' num2str(itt) '.mat'],...
-                'big_obj_g','aperture_g','sub_obj_g','sup_ap_g','-v7.3');
+                'big_obj_g','aperture_g','sub_obj_g','sub_ap_g','-v7.3');
         end
 
     toc
