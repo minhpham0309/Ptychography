@@ -148,8 +148,8 @@ for m = 1:length(lambda)
     centrex = round(pixelPositions(:,1));
     centBig = round((bigx+1)/2);
     for aper = 1:nApert
-        cropR(aper,:,m) = cropVec+centBig+(centrey(aper)-centBig);
-        cropC(aper,:,m) = cropVec+centBig+(centrex(aper)-centBig);
+        cropR(aper,:,m) = cropVec+centrey(aper);
+        cropC(aper,:,m) = cropVec+centrex(aper);
         cropR_sub(aper,:,m) = cropC(aper,:,m);
         cropC_sub(aper,:,m) = cropR(aper,:,m);
     end
