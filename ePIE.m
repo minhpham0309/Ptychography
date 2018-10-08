@@ -10,6 +10,9 @@ save_string = [ dir '/Results_ptychography/']; % Place to save results
 imout = 1; % boolean to determine whether to monitor progress or not
 [~,jobID] = system('echo $JOB_ID');
 jobID = jobID(~isspace(jobID));
+if isempty(jobID)
+    jobID = 'local';
+end
 %% Load inputs from struct
 diffpats = ePIE_inputs(1).Patterns;
 positions = ePIE_inputs(1).Positions;
@@ -20,7 +23,7 @@ aperture = ePIE_inputs(1).InitialAp;
 iterations = ePIE_inputs(1).Iterations;
 saveOutput = ePIE_inputs.saveOutput;
 filename = ePIE_inputs(1).FileName;
-filename = strcat('reconstruction_ePIE_',filename,'_',job_ID);
+filename = strcat('reconstruction_ePIE_',filename,'_',jobID);
 filename = strrep(filename,'__','_');
 %% parameter inputs
 if isfield(ePIE_inputs, 'updateAp')
