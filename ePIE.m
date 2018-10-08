@@ -19,6 +19,9 @@ aperture_radius = ePIE_inputs(1).ApRadius;
 aperture = ePIE_inputs(1).InitialAp;
 iterations = ePIE_inputs(1).Iterations;
 saveOutput = ePIE_inputs.saveOutput;
+filename = ePIE_inputs(1).FileName;
+filename = strcat('reconstruction_ePIE_',filename,'_',job_ID);
+filename = strrep(filename,'__','_');
 %% parameter inputs
 if isfield(ePIE_inputs, 'updateAp')
     update_aperture = ePIE_inputs.updateAp;
