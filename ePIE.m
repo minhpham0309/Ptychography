@@ -167,12 +167,13 @@ for itt = 1:iterations
 %% Update the probe
         
         if update_aperture == 1
-            if itt > iterations - freeze_aperture
-                new_beta_ap = beta_ap*sqrt((iterations-itt)/iterations);
-                update_factor_pr = new_beta_ap./object_max;
-             else
-                update_factor_pr = beta_ap./object_max;
-            end
+%             if itt > iterations - freeze_aperture
+%                 new_beta_ap = beta_ap*sqrt((iterations-itt)/iterations);
+%                 update_factor_pr = new_beta_ap./object_max;
+%              else
+%                 update_factor_pr = beta_ap./object_max;
+%             end
+            update_factor_pr = beta_ap ./ object_max;
             aperture = aperture +update_factor_pr*conj(buffer_rspace).*(diff_exit_wave);
         end
         
