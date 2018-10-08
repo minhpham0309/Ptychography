@@ -127,10 +127,7 @@ best_err = 100; % check to make sure saving reconstruction with best error
 %% Main ePIE itteration loop
 disp('========beginning reconstruction=======');
 for itt = 1:iterations
-    count = 1;
-%     if itt == 1
-%         tic
-%     end
+    tic;
     for aper = randperm(nApert)
 %         bigObjShifted = circshift(big_obj, [-1*(centrey(aper) - centBig) -1*(centrex(aper) - centBig)]);
 %         rspace = croppedOut(bigObjShifted,y_kspace);        
@@ -206,10 +203,7 @@ for itt = 1:iterations
         %         writeVideo(writerObj,getframe(h)); % take screen shot
         
     end
-    
-%     toc
-%     tic
-        
+      
      mean_err = sum(fourier_error(itt,:),2)/nApert;
     if best_err > mean_err
         best_obj = big_obj;
@@ -221,7 +215,8 @@ for itt = 1:iterations
 %         'best_obj','aperture','fourier_error','-v7.3');
         inter_obj(:,:,inter_frame) = best_obj;
     end
-    
+t1 = toc; 
+fprintf('%d. Error = %f\n time elapsed %f s\n',itt,mean_err, t1);
 end
 disp('======reconstruction finished=======')
 
@@ -234,9 +229,9 @@ best_obj = gather(best_obj);
 aperture = gather(aperture);
 
 
-% if saveOutput == 1
-%     save([save_string 'best_obj_' filename '.mat'],'best_obj','aperture','initial_obj','initial_aperture','fourier_error');
-% end
+if saveOutput == 1
+    save([save_string 'best_obj_' filename '.mat'],'best_obj','aperture','initial_obj','initial_aperture','fourier_error');
+end
 
 %% Function for converting positions from experimental geometry to pixel geometry
 
