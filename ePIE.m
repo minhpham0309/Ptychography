@@ -72,6 +72,7 @@ fprintf('iterations = %d\n', iterations);
 fprintf('beta probe = %0.1f\n', beta_ap);
 fprintf('beta obj = %0.1f\n', beta_obj);
 fprintf('gpu flag = %d\n', gpu);
+fprintf('initial probe radius = %f\n', aperture_radius);
 fprintf('updating probe = %d\n', update_aperture);
 fprintf('positivity = %d\n', do_posi);
 fprintf('misc notes: %s\n', miscNotes);
