@@ -60,6 +60,11 @@ if isfield(ePIE_inputs, 'save_intermediate');
 else
     save_intermediate = 0;
 end
+if isfield(ePIE_inputs, 'probe_mask_flag');
+    probe_mask_flag = ePIE_inputs.probe_mask_flag;
+else
+    probe_mask_flag = 0;
+end
 clear ePIE_inputs
 
 %% === Reconstruction parameters frequently changed === %%
@@ -75,6 +80,7 @@ fprintf('gpu flag = %d\n', gpu);
 fprintf('initial probe radius = %f\n', aperture_radius);
 fprintf('updating probe = %d\n', update_aperture);
 fprintf('positivity = %d\n', do_posi);
+fprintf('probe mask = %d\n', probe_mask_flag);
 fprintf('misc notes: %s\n', miscNotes);
 %% Define parameters from data and for reconstruction
 for ii = 1:size(diffpats,3)
@@ -99,6 +105,9 @@ X1 = centrex - floor(y_kspace/2); X2 = X1+y_kspace-1;
 if aperture == 0
     aperture = single(((makeCircleMask(round(aperture_radius./pixel_size),little_area))));
     initial_aperture = aperture;
+    if probe_mask_flag
+        probe_mask = single(((makeCircleMask(1.20*round(aperture_radius./pixel_size),little_area)))); %loose support
+    end
 else
     aperture = single(aperture);
     initial_aperture = aperture;
@@ -176,6 +185,9 @@ for itt = 1:iterations
 %             end
             update_factor_pr = beta_ap ./ object_max;
             aperture = aperture +update_factor_pr*conj(buffer_rspace).*(diff_exit_wave);
+            if probe_mask_flag
+                aperture = aperture .* probe_mask;
+            end
         end
         
         
