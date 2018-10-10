@@ -79,6 +79,11 @@ if isfield(ePIE_inputs, 'update_aperture_after');
 else
     update_aperture_after = 0;
 end
+if isfield(ePIE_inputs, 'probe_mask_flag')
+    probe_mask_flag = ePIE_inputs.probe_mask_flag;
+else
+    probe_mask_flag = 0;
+end
 if isfield(ePIE_inputs, 'miscNotes')
     miscNotes = ePIE_inputs.miscNotes;
 else
@@ -104,6 +109,7 @@ fprintf('updating probe = %d\n',updateAp);
 fprintf('enforcing positivity = %d\n',do_posi);
 fprintf('updating probe after iteration %d\n',update_aperture_after);
 fprintf('mode suppression = %d\n',modeSuppression);
+fprintf('probe mask = %d\n',probe_mask_flag);
 fprintf('misc notes: %s\n', miscNotes);
 clear ePIE_inputs
 %% Define parameters from data and for reconstruction
@@ -136,21 +142,20 @@ for m = 1:length(lambda)
         else
             aperture{m} = single(feval(mcm,(ceil(aperture_radius./pixel_size(m))),little_area));
         end
-
         initial_aperture{m} = aperture{m};
+        
+        if probe_mask_flag
+            pm = single(((feval(mcm,(ceil(1.2*aperture_radius./pixel_size(m))),little_area))));
+            pm(pm == 0) = 1e-6; %prevent NaN
+            probe_mask{m} = pm;
+        end
+            
     else
 %         display('using supplied aperture')
         aperture{m} = single(aperture{m});
         initial_aperture{m} = aperture{m};
     end
 
-    if probeMaskFlag == 1
-%         display('applying loose support')
-    %     probeMask{m} = double(aperture{m} > 0);
-        probeMask{m} = double(feval(mcm,(ceil(aperture_radius./pixel_size(m))),little_area));
-    else
-        probeMask{m} = [];
-    end
 
     if big_obj{m} == 0
         big_obj{m} = 1e-3.*single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
@@ -245,8 +250,8 @@ for itt = 1:iterations
                     update_factor_pr = beta_ap ./ object_max{m}.^2;
                     aperture{m} = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
                 end
-                if probeMaskFlag == 1
-                    aperture{m} = aperture{m} .* probeMask{m};
+                if probe_mask_flag 
+                    aperture{m} = aperture{m} .* probe_mask{m};
                 end
             end 
 
