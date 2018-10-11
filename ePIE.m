@@ -230,10 +230,10 @@ for itt = 1:iterations
         best_err = mean_err;
     end         
     if save_intermediate == 1 && mod(itt,10) == 0
-        inter_frame = inter_frame + 1;
-%         save(['inter_output_ePIE_ID_',jobID,'_itt_',num2str(itt),'.mat'],...
-%         'best_obj','aperture','fourier_error','-v7.3');
-        inter_obj(:,:,inter_frame) = best_obj;
+        big_obj_g = gather(big_obj);
+        aperture_g = gather(aperture);
+        save([save_string filename '_itt' num2str(itt) '.mat'],...
+            'big_obj_g','aperture_g','-v7.3');
     end
 t1 = toc; 
 fprintf('%d. Error = %f\n time elapsed %f s\n',itt,mean_err, t1);
