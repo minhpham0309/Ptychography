@@ -224,7 +224,7 @@ for itt = 1:iterations
         best_obj = big_obj;
         best_err = mean_err;
     end         
-    if save_intermediate == 1 && mod(itt,10) == 0
+    if save_intermediate == 1 && mod(itt,round(iterations/10)) == 0
         big_obj_g = gather(big_obj);
         aperture_g = gather(aperture);
         save([save_string filename '_itt' num2str(itt) '.mat'],...
