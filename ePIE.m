@@ -1,5 +1,5 @@
 
-function [big_obj,aperture,fourier_error,initial_obj,initial_aperture,inter_obj] = ePIE(ePIE_inputs,varargin)
+function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = ePIE(ePIE_inputs,varargin)
 %varargin = {beta_obj, beta_ap}
 optional_args = {0.9 0.9}; %default values for varargin parameters
 rng('shuffle','twister');
@@ -120,12 +120,7 @@ else
     big_obj = single(big_obj);
     initial_obj = big_obj;
 end
-if save_intermediate == 1
-    inter_obj = zeros([size(big_obj) floor(iterations/10)]);
-    inter_frame = 0;
-else
-    inter_obj = [];
-end
+
 fourier_error = zeros(iterations,nApert);
 
 if gpu == 1
