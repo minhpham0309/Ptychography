@@ -49,11 +49,6 @@ if isfield(ePIE_inputs, 'apComplexGuess')
 else
     apComplexGuess = 0;
 end
-if isfield(ePIE_inputs, 'probeMaskFlag')
-    probeMaskFlag = ePIE_inputs(1).probeMaskFlag;
-else
-    probeMaskFlag = 0;
-end
 if isfield(ePIE_inputs, 'averagingConstraint')
     averagingConstraint = ePIE_inputs(1).averagingConstraint;
 else
@@ -142,20 +137,17 @@ for m = 1:length(lambda)
         else
             aperture{m} = single(feval(mcm,(ceil(aperture_radius./pixel_size(m))),little_area));
         end
-        initial_aperture{m} = aperture{m};
-        
-        if probe_mask_flag
-            pm = single(((feval(mcm,(ceil(1.2*aperture_radius./pixel_size(m))),little_area))));
-            pm(pm == 0) = 1e-6; %prevent NaN
-            probe_mask{m} = pm;
-        end
-            
+        initial_aperture{m} = aperture{m};    
     else
 %         display('using supplied aperture')
         aperture{m} = single(aperture{m});
         initial_aperture{m} = aperture{m};
     end
-
+    if probe_mask_flag
+        pm = single(((feval(mcm,(ceil(1.2*aperture_radius./pixel_size(m))),little_area))));
+        pm(pm == 0) = 1e-6; %prevent NaN
+        probe_mask{m} = pm;
+    end
 
     if big_obj{m} == 0
         big_obj{m} = 1e-3.*single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
