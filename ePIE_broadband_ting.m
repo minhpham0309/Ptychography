@@ -97,7 +97,6 @@ fprintf('number of modes = %d\n',nModes);
 fprintf('gpu flag = %d\n',gpu);
 fprintf('averaging objects = %d\n',averagingConstraint);
 fprintf('complex probe guess = %d\n',apComplexGuess);
-fprintf('probe mask flag = %d\n',probeMaskFlag);
 fprintf('strong positivity = %d\n',strongPosi);
 fprintf('realness enforced = %d\n',realness);
 fprintf('updating probe = %d\n',updateAp);
@@ -156,12 +155,7 @@ for m = 1:length(lambda)
         big_obj{m} = single(big_obj{m});
         initial_obj{m} = big_obj{m};
     end
-    if save_intermediate == 1
-        inter_obj{m} = zeros([size(big_obj{m}) 10]);
-        inter_frame = 0;
-    else
-        inter_obj = [];
-    end
+
 %     display(size(big_obj{m}));
 
 end
@@ -313,15 +307,11 @@ for itt = 1:iterations
             best_err = mean_err;
         end
 
-        if save_intermediate == 1 && mod(itt,floor(iterations/10)) == 0
-            inter_frame = inter_frame+1;
-            for m = 1:nModes
-                if gpu == 1
-                    inter_obj{m}(:,:,inter_frame) = gather(best_obj{m});
-                else
-                    inter_obj{m}(:,:,inter_frame) = best_obj{m};
-                end
-            end
+        if save_intermediate == 1 && mod(itt,round(iterations/10)) == 0
+            big_obj_g = cellfun(@gather, big_obj, 'UniformOutput', false);
+            aperture_g = cellfun(@gather, aperture, 'UniformOutput', false);
+            save([save_string filename '_itt' num2str(itt) '.mat'],...
+                'big_obj_g','aperture_g','-v7.3');
         end
 
     toc
@@ -342,7 +332,7 @@ end
 
 if saveOutput == 1
     save([save_string filename '.mat'],...
-        'best_obj','aperture','big_obj','initial_aperture','fourier_error','S','inter_obj','-v7.3');
+        'best_obj','aperture','big_obj','initial_aperture','fourier_error','S','-v7.3');
 end
 
 %% Function for converting positions from experimental geometry to pixel geometry
