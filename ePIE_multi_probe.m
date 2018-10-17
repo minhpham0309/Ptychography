@@ -187,7 +187,7 @@ for itt = 1:iterations
             buffer_exit_wave{m} = rspace.*aperture{m};
             update_exit_wave = buffer_exit_wave{m};
             temp_dp{m} = fft2(update_exit_wave);
-            collected_mag(goodInds) = collected_mag(goodInds) + abs(temp_dp{ii}(goodInds)).^2;
+            collected_mag(goodInds) = collected_mag(goodInds) + abs(temp_dp{m}(goodInds)).^2;
         end
 
         mag_ratio = sqrt(complex(current_dp(goodInds))) ./ sqrt(complex(collected_mag(goodInds)));
