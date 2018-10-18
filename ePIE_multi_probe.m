@@ -130,7 +130,7 @@ for aper = 1:nApert
     cropC(aper,:,1) = cropVec+centBig+(centrex(aper)-centBig);
 end
 if big_obj == 0
-    big_obj = 1e-3.*single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
+    big_obj = single(1e-3*ones(bigx,bigy));%1e-3.*single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
     initial_obj = big_obj;
 else
     big_obj = single(big_obj);
@@ -185,8 +185,7 @@ for itt = 1:iterations
         for m = 1:nModes
             probe_max{m} = max(abs(aperture{m}(:)));
             buffer_exit_wave{m} = rspace.*aperture{m};
-            update_exit_wave = buffer_exit_wave{m};
-            temp_dp{m} = fft2(update_exit_wave);
+            temp_dp{m} = fft2(buffer_exit_wave{m});
             collected_mag(goodInds) = collected_mag(goodInds) + abs(temp_dp{m}(goodInds)).^2;
         end
 
