@@ -140,7 +140,7 @@ end
 for m = 1:nModes
     
     if aperture{m} == 0
-       app = single(feval(mcm,(ceil(aperture_radius./pixel_size)),little_area));
+       app = single(feval(mcm,(round(aperture_radius./pixel_size)),little_area));
        aperture{m} = app .* 0.02 .* (nModes+1 - m);
        initial_aperture{m} = aperture{m};    
     else
