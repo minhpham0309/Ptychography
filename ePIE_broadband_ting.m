@@ -137,7 +137,7 @@ for m = 1:length(lambda)
             aperture{m} = single(((feval(mcm,(ceil(aperture_radius./pixel_size(m))),little_area).*...
               rand(little_area,little_area) .* exp(1i*rand(little_area,little_area)))));
         else
-            aperture{m} = single(feval(mcm,(ceil(aperture_radius./pixel_size(m))),little_area));
+            aperture{m} = single( 0.2 * feval(mcm,(ceil(aperture_radius./pixel_size(m))),little_area) );
         end
         initial_aperture{m} = aperture{m};    
     else
@@ -153,7 +153,7 @@ for m = 1:length(lambda)
     end
 
     if big_obj{m} == 0
-        big_obj{m} = 1e-3.*single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
+        big_obj{m} = 1e-3 .* single(ones(bigx,bigy)); %1e-3.*single(rand(bigx,bigy)).*exp(1i*(rand(bigx,bigy)));
         initial_obj{m} = big_obj{m};
     else
         big_obj{m} = single(big_obj{m});
