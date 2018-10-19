@@ -147,7 +147,8 @@ for m = 1:length(lambda)
     end
     if probe_mask_flag
         pm = single(((feval(mcm,(ceil(1.2*aperture_radius./pixel_size(m))),little_area))));
-        pm(pm == 0) = 1e-6; %prevent NaN
+%         pm(pm == 0) = 1e-6; %prevent NaN
+        pm = smooth2d(pm, 0.02);
         probe_mask{m} = pm;
     end
 
@@ -239,7 +240,7 @@ for itt = 1:iterations
                     update_factor_pr = beta_ap ./ object_max{m}.^2;
                     aperture{m} = aperture{m} +update_factor_pr*conj(buffer_rspace{m}).*(diff_exit_wave);
                 end
-                if probe_mask_flag 
+                if probe_mask_flag && mod(itt,10) == 0
                     aperture{m} = aperture{m} .* probe_mask{m};
                 end
             end 
