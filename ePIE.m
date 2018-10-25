@@ -114,7 +114,8 @@ else
 end
 
 if big_obj == 0
-    big_obj = single(1e-3.*rand(bigx,bigy)).*exp(1i*(1e-3.*rand(bigx,bigy)));
+%     big_obj = single(1e-3.*rand(bigx,bigy)).*exp(1i*(1e-3.*rand(bigx,bigy)));
+    big_obj = single(1e-3.*ones(bigx,bigy));
     initial_obj = big_obj;
 else
     big_obj = single(big_obj);
