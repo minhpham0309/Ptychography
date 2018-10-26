@@ -118,6 +118,7 @@ end
 
 if probe_mask_flag
     probe_mask = single(((makeCircleMask(1.20*round(aperture_radius./pixel_size),little_area)))); %loose support
+    probe_mask(probe_mask == 0) = 1e-8; %prevent NaN
 end
 
 if big_obj == 0
@@ -232,7 +233,7 @@ for itt = 1:iterations
         best_obj = big_obj;
         best_err = mean_err;
     end         
-    if save_intermediate == 1 && mod(itt,round(iterations/10)) == 0
+    if save_intermediate == 1 && mod(itt,round(iterations/10)) == 0 && itt < iterations
         big_obj_g = gather(big_obj);
         aperture_g = gather(aperture);
         save([save_string filename '_itt' num2str(itt) '.mat'],...
