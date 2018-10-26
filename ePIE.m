@@ -65,6 +65,11 @@ if isfield(ePIE_inputs, 'probe_mask_flag');
 else
     probe_mask_flag = 0;
 end
+if isfield(ePIE_inputs, 'obj_scale');
+    obj_scale = ePIE_inputs.obj_scale;
+else
+    obj_scale = 1;
+end
 clear ePIE_inputs
 
 %% === Reconstruction parameters frequently changed === %%
@@ -81,6 +86,7 @@ fprintf('initial probe radius = %f\n', aperture_radius);
 fprintf('updating probe = %d\n', update_aperture);
 fprintf('positivity = %d\n', do_posi);
 fprintf('probe mask = %d\n', probe_mask_flag);
+fprintf('obj_scale = %f\n', obj_scale);
 fprintf('misc notes: %s\n', miscNotes);
 %% Define parameters from data and for reconstruction
 for ii = 1:size(diffpats,3)
@@ -115,7 +121,7 @@ end
 
 if big_obj == 0
 %     big_obj = single(1e-3.*rand(bigx,bigy)).*exp(1i*(1e-3.*rand(bigx,bigy)));
-    big_obj = single(1e-3.*ones(bigx,bigy));
+    big_obj = single(obj_scale.*ones(bigx,bigy));
     initial_obj = big_obj;
 else
     big_obj = single(big_obj);
