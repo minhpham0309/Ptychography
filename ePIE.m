@@ -241,6 +241,7 @@ for itt = 1:iterations
     end
 t1 = toc; 
 fprintf('%d. Error = %f\n time elapsed %f s\n',itt,mean_err, t1);
+fprintf('\n');
 end
 disp('======reconstruction finished=======')
 
