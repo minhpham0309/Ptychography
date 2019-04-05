@@ -1,3 +1,4 @@
+%% sir-DR reconstruction algorithm
 
 function [big_obj,aperture,fourier_error,initial_obj,initial_aperture] = DRb(ePIE_inputs,varargin)
 %varargin = {beta_obj, beta_ap, probeNorm, init_weight, final_weight, order, semi_implicit_P}
@@ -27,10 +28,10 @@ else
 end
 %% === Reconstruction parameters frequently changed === %%
 freeze_aperture = Inf;
-optional_args = {.9 .1 1, 0.2, 0.6, 4, 0}; %default values for varargin parameters
+optional_args = {.9, .1, 0.9, 1, 0.2, 0.6, 4, 0}; %default values for varargin parameters
 nva = length(varargin);
 optional_args(1:nva) = varargin;
-[beta_obj, beta_ap, probeNorm, init_weight, final_weight, order, semi_implicit_P] = optional_args{:};
+[beta_obj, beta_ap, alpha, probeNorm, init_weight, final_weight, order, semi_implicit_P] = optional_args{:};
 
 %% print parameters
 fprintf('iterations = %d\n', iterations);
@@ -62,6 +63,7 @@ X1 = centrex - floor(y_kspace/2); X2 = X1+y_kspace-1;
 %% create initial aperture?and object guesses
 if aperture == 0
     aperture = single(((2*makeCircleMask(round(aperture_radius./pixel_size),little_area))));
+    aperture = my_ifft(aperture);
     initial_aperture = aperture;
 else
     aperture = single(aperture);
@@ -84,7 +86,8 @@ end
 [XX,YY] = meshgrid(1:bigx,1:bigy);
 X_cen = floor(bigx/2); Y_cen = floor(bigy/2);
 R2 = (XX-X_cen).^2 + (YY-Y_cen).^2;
-Kfilter = exp(-R2/(2*400)^2);Kfilter = Kfilter/max(Kfilter(:));
+Kfilter = exp(-R2/(2*400)^2);
+Kfilter = Kfilter/max(Kfilter(:));
 
 fourier_error = zeros(iterations,nApert);
 if strcmp(gpu,'GPU')
@@ -97,7 +100,7 @@ else
     display('========ePIE DR reconstructing with CPU========')
 end
 best_err = 100; % check to make sure saving reconstruction with best error
-Z = diffpats.*exp(rand(N1,N2,nApert)); V=Z; ds=1;
+Z = diffpats.*exp(rand(N1,N2,nApert)); ds=1;
 % user can choose the weight sequence how slowly it increases
 % weight in (0,1)
 % weight starts at a small value, such as 0.2 and then slowly increase to
@@ -133,7 +136,7 @@ for t = 1:iterations
         %bigObjShifted = circshift(big_obj, [-1*(centrey(aper) - centBig) -1*(centrex(aper) - centBig)]);
         %u_old = croppedOut(bigObjShifted,y_kspace); % size 384x384
         u_old = big_obj(Y1(aper):Y2(aper), X1(aper):X2(aper));
-        object_max = max(abs(u_old(:))).^2;
+        %object_max = max(abs(u_old(:))).^2;
         probe_max = max(abs(aperture(:))).^2;
 %% Create new exitwave
         Pu_old = u_old.*(aperture);
@@ -141,7 +144,7 @@ for t = 1:iterations
         check_dp = abs(z_u);
         
         z = Z(:,:,aper);
-        z_F = 2*z_u - z;
+        z_F = (1+alpha)*z_u - alpha*z;
         
         diffpat_i = diffpats(:,:,aper);
         missing_data = diffpat_i == -1; 
@@ -151,7 +154,7 @@ for t = 1:iterations
         phase = angle(z_F);
         z_F =  (1-weight)*exp(1i*phase) .* diffpats(:,:,aper) + weight*z_F ;
         z_F(missing_data) = k_fill;
-        z = z + z_F - z_u;
+        z = z_F + alpha*(z- z_u);
         Z(:,:,aper)=z;        
         
 %% Update the object
@@ -167,11 +170,12 @@ for t = 1:iterations
         big_obj(Y1(aper):Y2(aper), X1(aper):X2(aper)) = u_new;
 %% Update the probe
         if update_aperture == 1 
+            object_max = max(abs(u_new(:))).^2;
             if t > iterations - freeze_aperture
-                new_beta_ap = beta_ap*sqrt((iterations-t)/iterations);
+                new_beta_ap = beta_ap*sqrt((iterations-t+1)/iterations);
             else
                 new_beta_ap = beta_ap;
-            end
+            end            
             ds = new_beta_ap./object_max;
 
             if semi_implicit_P            
@@ -195,7 +199,7 @@ for t = 1:iterations
       %% show results
     if  mod(t,showim) == 0 && imout == 1;        
         figure(333)       
-        hsv_big_obj = make_hsv(big_obj,1);
+        %hsv_big_obj = make_hsv(big_obj,1);
         hsv_aper = make_hsv(aperture,1);
         subplot(2,2,1)
         imagesc(abs(big_obj)); axis image; colormap gray; title(['reconstruction pixel size = ' num2str(pixel_size)] )
